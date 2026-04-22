@@ -1,58 +1,124 @@
+/**
+ * Destinations Page Component
+ * 
+ * Displays a list of travel destinations in Kenya with filtering capabilities.
+ * Users can browse by category (hotels, restaurants, activities) and view
+ * destination details including ratings and descriptions.
+ * 
+ * Features:
+ * - Fetch destinations from backend API
+ * - Filter by category (accommodation, gastronomy, activity)
+ * - Display destination cards with ratings
+ * - Responsive design for mobile and desktop
+ * 
+ * API Integration:
+ * - GET /destinations.php - Fetch all destinations
+ */
+
 import Navbar from "./statics/navbar.jsx";
 import Footer from "./statics/footer.jsx";
 import { Bed, Coffee, Sparkles, Star, MapPin, Heart, Users } from 'lucide-react';
 import React, { useState, useEffect, useMemo } from 'react';
 import './css/destinations.css';
 
+// API base URL for all backend requests
 const API_BASE = 'http://localhost:8000/backend/api';
 
+/**
+ * Category options displayed in filter buttons
+ * Maps to destination categories in database
+ */
 const heroCategories = [
-  { label: 'All', value: '', icon: Sparkles },
-  { label: 'Hotels', value: 'accommodation', icon: Bed },
-  { label: 'Restaurants', value: 'gastronomy', icon: Coffee },
-  { label: 'Activities', value: 'activity', icon: Sparkles },
+  { label: 'All', value: '', icon: Sparkles },           // Show all destinations
+  { label: 'Hotels', value: 'accommodation', icon: Bed }, // Filter accommodations
+  { label: 'Restaurants', value: 'gastronomy', icon: Coffee }, // Filter restaurants
+  { label: 'Activities', value: 'activity', icon: Sparkles }, // Filter activities
 ];
 
+/**
+ * Marketing perks displayed in hero section
+ * Shows value propositions for the service
+ */
 const perks = [
   { title: 'Curated stays', value: '120+', description: 'Handpicked hotels and unique homes.' },
   { title: 'Top rated', value: '4.8 ★', description: 'Trusted reviews from guests worldwide.' },
   { title: 'Local guides', value: '50+', description: 'Authentic experiences with insider tips.' },
 ];
 
+/**
+ * Destinations Page Component
+ * 
+ * Main component for displaying and filtering travel destinations
+ * 
+ * @returns {JSX.Element} Rendered destinations page
+ */
 function Destinations() {
-  const [destinations, setDestinations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeCategory, setActiveCategory] = useState('');
+  // State management
+  const [destinations, setDestinations] = useState([]);    // All destinations from API
+  const [loading, setLoading] = useState(true);            // Loading indicator
+  const [activeCategory, setActiveCategory] = useState(''); // Selected filter category
 
+  /**
+   * Effect Hook - Fetch destinations on component mount
+   * Called only once when component first renders (empty dependency array)
+   */
   useEffect(() => {
     fetchDestinations();
   }, []);
 
+  /**
+   * Fetch Destinations from Backend API
+   * 
+   * Makes GET request to fetch all destinations from database.
+   * Shows empty state if API fails or returns no data.
+   * Updates loading state when complete.
+   * 
+   * @async
+   * @returns {Promise<void>}
+   */
   const fetchDestinations = async () => {
     try {
+      // Make API request to get destinations
       const response = await fetch(`${API_BASE}/destinations.php`);
       const data = await response.json();
+      
+      // Update state with fetched data or empty array if unavailable
       if (data.destinations) {
         setDestinations(data.destinations);
       } else {
         setDestinations([]);
       }
     } catch (error) {
+      // Log error and show empty state on failure
       console.error('Error fetching destinations:', error);
       setDestinations([]);
     } finally {
+      // Mark loading as complete
       setLoading(false);
     }
   };
 
-  // Filter logic
+  /**
+   * Memoized Filtered Destinations
+   * 
+   * Filters destinations by category using useMemo for performance optimization.
+   * Only recalculates when activeCategory or destinations changes.
+   * 
+   * Dependencies:
+   *   - activeCategory: When user clicks a category filter
+   *   - destinations: When new data is fetched from API
+   */
   const filteredDestinations = useMemo(() => {
+    // Return all destinations if no filter selected
     if (!activeCategory) return destinations;
+    
+    // Filter destinations matching selected category
     return destinations.filter((place) => 
       String(place.category || '').toLowerCase() === activeCategory.toLowerCase()
     );
   }, [activeCategory, destinations]);
 
+  // Get first 6 destinations for featured section
   const featuredDestinations = filteredDestinations.slice(0, 6);
 
   return (

@@ -1,11 +1,38 @@
+/**
+ * Discover Page Component
+ * 
+ * Allows users to search and explore destinations with advanced filtering.
+ * Users can:
+ * - Search destinations by name, location, or description
+ * - Filter by category (nature, culture, adventure, food, shopping)
+ * - Add/remove destinations from favorites
+ * - View destination details and share them
+ * 
+ * Features:
+ * - Real-time search with debounced API calls
+ * - Category-based filtering
+ * - Grid view layout
+ * - Favorites toggle (client-side state only)
+ * - Image display for destinations
+ * - Rating and review count display
+ * 
+ * @component
+ * @returns {JSX.Element} Discover page with search and filtering
+ */
+
 import Navbar from "./statics/navbar.jsx";
 import Footer from "./statics/footer.jsx";
 import { Search, MapPin, Heart, Share2, Tag, TrendingUp, Filter, Map } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import './css/discover.css';
 
+// API base URL for backend requests
 const API_BASE = 'http://localhost:8000/backend/api';
 
+/**
+ * Available categories for filtering destinations
+ * Each category includes an emoji for visual representation
+ */
 const categories = [
   { id: '', label: 'All', emoji: '🌍' },
   { id: 'nature', label: 'Nature', emoji: '🌲' },
@@ -15,38 +42,97 @@ const categories = [
   { id: 'shopping', label: 'Shopping', emoji: '🛍️' },
 ];
 
+/**
+ * Discover Component
+ * 
+ * Main component for discovery page with search and filtering
+ * 
+ * State Variables:
+ *   - activeCategory: Currently selected category filter
+ *   - searchTerm: User's search query text
+ *   - discoveries: Array of search results
+ *   - loading: Loading indicator for API calls
+ *   - favorites: Array of favorited destination IDs (client-side only)
+ * 
+ * @returns {JSX.Element} Rendered discover page
+ */
 function Discover() {
-  const [activeCategory, setActiveCategory] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [discoveries, setDiscoveries] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [favorites, setFavorites] = useState([]);
+  // Filter state
+  const [activeCategory, setActiveCategory] = useState('');     // Current category filter
+  const [searchTerm, setSearchTerm] = useState('');             // Current search text
+  
+  // Data state
+  const [discoveries, setDiscoveries] = useState([]);           // Search results
+  const [loading, setLoading] = useState(true);                 // Loading state
+  const [favorites, setFavorites] = useState([]);               // Favorited destination IDs
 
+  /**
+   * Effect Hook: Fetch discoveries when search or category changes
+   * 
+   * Re-fetches results whenever:
+   *   - User types in search box (activeCategory changes)
+   *   - User selects a category (searchTerm changes)
+   * 
+   * Dependencies: activeCategory, searchTerm
+   */
   useEffect(() => {
     fetchDiscoveries();
   }, [activeCategory, searchTerm]);
 
+  /**
+   * Fetch Discoveries from Backend API
+   * 
+   * Makes API call to get destinations matching current search/category filters.
+   * Constructs query parameters dynamically based on active filters.
+   * Handles loading state and errors gracefully.
+   * 
+   * Query Parameters:
+   *   - search: Search term for name/description/location
+   *   - category: Category filter
+   * 
+   * @async
+   * @returns {Promise<void>}
+   */
   const fetchDiscoveries = async () => {
     try {
+      // Build query parameters based on active filters
       const params = new URLSearchParams();
       if (searchTerm) params.append('search', searchTerm);
       if (activeCategory) params.append('category', activeCategory);
       
+      // Fetch destinations with active filters
       const response = await fetch(`${API_BASE}/destinations.php?${params}`);
       const data = await response.json();
+      
+      // Update state with results
       if (data.destinations) {
         setDiscoveries(data.destinations);
       }
     } catch (error) {
       console.error('Error fetching discoveries:', error);
     } finally {
+      // Mark loading as complete
       setLoading(false);
     }
   };
 
+  /**
+   * Toggle Destination Favorite Status
+   * 
+   * Adds destination to favorites if not already favorited.
+   * Removes from favorites if already in the list.
+   * Note: This is client-side only - favorites not persisted to database
+   * 
+   * Future Enhancement: Save favorites to backend
+   * 
+   * @param {number} id - Destination ID to toggle favorite for
+   */
   const toggleFavorite = (id) => {
     setFavorites(prev => 
-      prev.includes(id) ? prev.filter(fav => fav !== id) : [...prev, id]
+      // If already favorited, remove it; otherwise add it
+      prev.includes(id) 
+        ? prev.filter(fav => fav !== id)  // Remove from favorites
+        : [...prev, id]                    // Add to favorites
     );
   };
 
