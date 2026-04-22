@@ -1,11 +1,13 @@
 import Navbar from "./statics/navbar.jsx";
 import Footer from "./statics/footer.jsx";
 import { Bed, Coffee, Sparkles, Star, MapPin, Heart, Users } from 'lucide-react';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import './css/destinations.css';
 
+const API_BASE = 'http://localhost:8000/backend/api';
+
 const heroCategories = [
-  { label: 'All', value: 'all', icon: Sparkles },
+  { label: 'All', value: '', icon: Sparkles },
   { label: 'Hotels', value: 'accommodation', icon: Bed },
   { label: 'Restaurants', value: 'gastronomy', icon: Coffee },
   { label: 'Activities', value: 'activity', icon: Sparkles },
@@ -17,34 +19,35 @@ const perks = [
   { title: 'Local guides', value: '50+', description: 'Authentic experiences with insider tips.' },
 ];
 
-const mockDestinations = [
-  { name: 'Serena Safari Lodge', category: 'accommodation', description: 'Luxury lodge with stunning views of the savanna and prime wildlife viewing.', image: '/images/serena-lodge.jpg', rating: 4.9, reviews: 342 },
-  { name: 'The Bomas of Kenya Restaurant', category: 'gastronomy', description: 'Authentic Kenyan cuisine showcasing traditional recipes and tribal dishes.', image: '/images/bomas-restaurant.jpg', rating: 4.7, reviews: 218 },
-  { name: 'Great Migration Safari', category: 'activity', description: 'Witness the incredible annual wildebeest migration across the Masai Mara.', image: '/images/migration.jpg', rating: 4.8, reviews: 456 },
-  { name: 'Tamarind Group Restaurant', category: 'gastronomy', description: 'Award-winning seafood restaurant with coastal charm and ocean views.', image: '/images/tamarind.jpg', rating: 4.9, reviews: 523 },
-  { name: 'Giraffe Centre Experience', category: 'activity', description: 'Interactive encounter with endangered Rothschild giraffes near Nairobi.', image: '/images/giraffe-centre.jpg', rating: 4.8, reviews: 387 },
-  { name: 'Villa Rosa Kempinski', category: 'accommodation', description: 'Five-star luxury hotel in the heart of Nairobi with world-class amenities.', image: '/images/villa-rosa.jpg', rating: 4.9, reviews: 441 },
-];
-
-const iconicPlaces = [
-  { name: 'Nairobi', detail: 'Urban safari and culture.', image: '/images/nairobi.jpg', attractions: 24 },
-  { name: 'Mombasa', detail: 'Coastal charm and history.', image: '/images/mombasa.jpg', attractions: 18 },
-  { name: "Hell's Gate", detail: 'Gorges and exploration.', image: '/images/hells-gate.jpg', attractions: 12 },
-  { name: 'Tsavo', detail: 'Wildlife and safari routes.', image: '/images/tsavo.jpg', attractions: 15 },
-];
-
-const stories = [
-  { title: 'A safari story', summary: 'Witness the Great Migration.', image: '/images/travel-story1.jpg', date: 'March 2024' },
-  { title: 'Sunsets of Lamu', summary: 'Discover coastal islands.', image: '/images/travel-story2.jpg', date: 'February 2024' },
-];
-
 function Destinations() {
-  const [destinations, setDestinations] = useState(mockDestinations);
-  const [activeCategory, setActiveCategory] = useState('all');
+  const [destinations, setDestinations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState('');
+
+  useEffect(() => {
+    fetchDestinations();
+  }, []);
+
+  const fetchDestinations = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/destinations.php`);
+      const data = await response.json();
+      if (data.destinations) {
+        setDestinations(data.destinations);
+      } else {
+        setDestinations([]);
+      }
+    } catch (error) {
+      console.error('Error fetching destinations:', error);
+      setDestinations([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter logic
   const filteredDestinations = useMemo(() => {
-    if (activeCategory === 'all') return destinations;
+    if (!activeCategory) return destinations;
     return destinations.filter((place) => 
       String(place.category || '').toLowerCase() === activeCategory.toLowerCase()
     );
@@ -108,11 +111,16 @@ function Destinations() {
             <h2 className="section-title">Featured Destinations</h2>
             <div className="content-layout">
               <div className="cards-grid">
-                {featuredDestinations.length > 0 ? (
+                {loading ? (
+                  <div className="loading-state">
+                    <Sparkles size={48} />
+                    <p>Loading destinations...</p>
+                  </div>
+                ) : featuredDestinations.length > 0 ? (
                   featuredDestinations.map((place) => (
-                    <div key={place.name} className="simple-card">
+                    <div key={place.id || place.name} className="simple-card">
                       <div className="card-image-wrapper">
-                        <img src={place.image} alt={place.name} className="card-image" />
+                        <img src={place.image_url || place.image} alt={place.name} className="card-image" />
                         <button className="favorite-btn" aria-label="Add to favorites">
                           <Heart size={20} />
                         </button>
@@ -122,8 +130,8 @@ function Destinations() {
                         <p>{place.description}</p>
                         <div className="card-footer">
                           <div className="rating">
-                            <Star size={16} fill="currentColor" /> {place.rating}
-                            <span className="reviews">({place.reviews})</span>
+                            <Star size={16} fill="currentColor" /> {place.rating || 0}
+                            <span className="reviews">({place.reviews || 0})</span>
                           </div>
                         </div>
                       </div>
@@ -150,47 +158,7 @@ function Destinations() {
           </div>
         </section>
 
-        {/* SECTION 4: ICONIC PLACES */}
-        <section className="iconic-places-section">
-          <div className="container">
-            <h2 className="section-title">Iconic Places to Explore</h2>
-            <div className="iconic-grid">
-              {iconicPlaces.map(place => (
-                <div key={place.name} className="iconic-card">
-                  <div className="iconic-image" style={{backgroundImage: `url(${place.image})`}}>
-                    <div className="iconic-overlay">
-                      <h3>{place.name}</h3>
-                      <p>{place.detail}</p>
-                      <div className="attractions-badge">
-                        <MapPin size={16} /> {place.attractions} attractions
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
 
-        {/* SECTION 5: TRAVEL STORIES */}
-        <section className="stories-section">
-          <div className="container">
-            <h2 className="section-title">Travel Stories from our community</h2>
-            <div className="stories-grid">
-              {stories.map(story => (
-                <div key={story.title} className="story-item">
-                  <div className="story-img" style={{backgroundImage: `url(${story.image})`}}>
-                    <div className="story-text">
-                      <span className="story-date">{story.date}</span>
-                      <h4>{story.title}</h4>
-                      <p>{story.summary}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
 
         {/* SECTION 6: CTA */}
         <section className="cta-section">

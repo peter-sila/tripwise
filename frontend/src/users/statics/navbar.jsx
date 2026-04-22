@@ -1,10 +1,73 @@
-import { useState } from 'react';
-import { Menu, X, Search, User, Globe } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Menu, X, Search, User, Globe, LogIn, LogOut } from 'lucide-react';
 import '../css/navbar.css';
+
+const API_BASE = 'http://localhost/tripwise/backend/api';
 
 const NavBar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [user, setUser] = useState(null);
+  const [showAuth, setShowAuth] = useState(false);
+  const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
+  const [authData, setAuthData] = useState({ email: '', password: '', name: '' });
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetchUser(token);
+    }
+  }, []);
+
+  const fetchUser = async (token) => {
+    try {
+      const response = await fetch(`${API_BASE}/auth.php`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (data.user) {
+        setUser(data.user);
+      }
+    } catch (error) {
+      console.error('Error fetching user:', error);
+    }
+  };
+
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    const endpoint = authMode === 'login' ? 'auth.php' : 'auth.php';
+    const body = authMode === 'login' 
+      ? { action: 'login', email: authData.email, password: authData.password }
+      : { action: 'register', email: authData.email, password: authData.password, name: authData.name };
+
+    try {
+      const response = await fetch(`${API_BASE}/${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+      const data = await response.json();
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        setUser(data.user);
+        setShowAuth(false);
+        setAuthData({ email: '', password: '', name: '' });
+      } else if (data.message) {
+        alert(data.message);
+      }
+    } catch (error) {
+      console.error('Auth error:', error);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setUser(null);
+  };
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const toggleSearch = () => setIsSearchOpen(!isSearchOpen);
@@ -52,9 +115,18 @@ const NavBar = () => {
           </button>
 
           {/* User Account */}
-          <button className="nav-icon-btn" aria-label="User Account">
-            <User size={20} />
-          </button>
+          {user ? (
+            <div className="user-menu">
+              <span className="user-name">Hi, {user.name}</span>
+              <button className="nav-icon-btn" onClick={handleLogout} aria-label="Logout">
+                <LogOut size={20} />
+              </button>
+            </div>
+          ) : (
+            <button className="nav-icon-btn" onClick={() => setShowAuth(!showAuth)} aria-label="Login">
+              <LogIn size={20} />
+            </button>
+          )}
 
           {/* Mobile Menu Toggle */}
           <button 
@@ -66,6 +138,48 @@ const NavBar = () => {
           </button>
         </div>
       </div>
+
+      {/* Auth Modal */}
+      {showAuth && (
+        <div className="auth-modal">
+          <div className="auth-container">
+            <button className="auth-close" onClick={() => setShowAuth(false)}>×</button>
+            <h3>{authMode === 'login' ? 'Login' : 'Register'}</h3>
+            <form onSubmit={handleAuth}>
+              {authMode === 'register' && (
+                <input
+                  type="text"
+                  placeholder="Name"
+                  value={authData.name}
+                  onChange={(e) => setAuthData({...authData, name: e.target.value})}
+                  required
+                />
+              )}
+              <input
+                type="email"
+                placeholder="Email"
+                value={authData.email}
+                onChange={(e) => setAuthData({...authData, email: e.target.value})}
+                required
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                value={authData.password}
+                onChange={(e) => setAuthData({...authData, password: e.target.value})}
+                required
+              />
+              <button type="submit">{authMode === 'login' ? 'Login' : 'Register'}</button>
+            </form>
+            <button 
+              className="auth-switch" 
+              onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
+            >
+              {authMode === 'login' ? 'Need an account? Register' : 'Have an account? Login'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Search Bar */}
       {isSearchOpen && (

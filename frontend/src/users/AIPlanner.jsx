@@ -1,71 +1,90 @@
 import Navbar from "./statics/navbar.jsx";
 import Footer from "./statics/footer.jsx";
-import { Zap, MapPin, Calendar, Users, Brain, Sparkles } from 'lucide-react';
-import React, { useState } from 'react';
+import { Zap, MapPin, Calendar, Users, Brain, Sparkles, Plus } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import './css/aiplanner.css';
 
-const features = [
-  {
-    icon: Brain,
-    title: 'AI-Powered',
-    description: 'Smart algorithms learn your preferences for personalized recommendations.',
-  },
-  {
-    icon: Zap,
-    title: 'Instant Planning',
-    description: 'Get a complete itinerary in seconds, not hours.',
-  },
-  {
-    icon: MapPin,
-    title: 'Local Insights',
-    description: 'Discover hidden gems and authentic local experiences.',
-  },
-];
-
-const steps = [
-  {
-    number: '1',
-    title: 'Tell Us About You',
-    description: 'Share your travel style, preferences, budget, and duration.',
-  },
-  {
-    number: '2',
-    title: 'AI Analyzes',
-    description: 'Our AI considers thousands of factors to create your perfect plan.',
-  },
-  {
-    number: '3',
-    title: 'Get Your Itinerary',
-    description: 'Receive a detailed day-by-day plan with activities and accommodations.',
-  },
-];
-
-const planningStyles = [
-  { id: 1, name: 'Adventure', emoji: '🏃' },
-  { id: 2, name: 'Cultural', emoji: '🎭' },
-  { id: 3, name: 'Luxury', emoji: '✨' },
-  { id: 4, name: 'Budget', emoji: '🎒' },
-  { id: 5, name: 'Family', emoji: '👨‍👩‍👧‍👦' },
-  { id: 6, name: 'Romantic', emoji: '💑' },
-];
+const API_BASE = 'http://localhost:8000/backend/api';
 
 function AIPlanner() {
-  const [selectedStyle, setSelectedStyle] = useState(null);
+  const [tripPlans, setTripPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
-    destination: '',
-    days: 3,
-    budget: 'medium',
-    travelers: 1,
+    title: '',
+    description: '',
+    start_date: '',
+    end_date: '',
   });
+
+  useEffect(() => {
+    fetchTripPlans();
+  }, []);
+
+  const fetchTripPlans = async () => {
+    try {
+      // For demo, assume user is logged in with token in localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setTripPlans([]);
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch(`${API_BASE}/aiPlanner.php`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (data.trip_plans) {
+        setTripPlans(data.trip_plans);
+      }
+    } catch (error) {
+      console.error('Error fetching trip plans:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleGeneratePlan = (e) => {
+  const handleCreatePlan = async (e) => {
     e.preventDefault();
-    console.log('Generating plan with:', { ...formData, style: selectedStyle });
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Please login first');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/aiPlanner.php`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title: formData.title,
+          description: formData.description,
+          start_date: formData.start_date,
+          end_date: formData.end_date,
+          items: [] // Empty for now
+        })
+      });
+      const data = await response.json();
+      if (data.message) {
+        alert('Trip plan created successfully!');
+        setFormData({ title: '', description: '', start_date: '', end_date: '' });
+        setShowForm(false);
+        fetchTripPlans();
+      }
+    } catch (error) {
+      console.error('Error creating trip plan:', error);
+    }
   };
 
   return (
@@ -107,125 +126,97 @@ function AIPlanner() {
           </div>
         </section>
 
-        {/* PLANNER FORM SECTION */}
-        <section className="planner-section">
+        {/* TRIP PLANS SECTION */}
+        <section className="plans-section">
           <div className="container">
-            <h2 className="section-title">Create Your Itinerary</h2>
-            
-            <div className="planner-layout">
-              <form className="planner-form" onSubmit={handleGeneratePlan}>
-                {/* Travel Style Selection */}
-                <div className="form-group">
-                  <label className="form-label">Choose Your Travel Style</label>
-                  <div className="style-grid">
-                    {planningStyles.map(style => (
-                      <button
-                        key={style.id}
-                        type="button"
-                        className={`style-option ${selectedStyle === style.id ? 'active' : ''}`}
-                        onClick={() => setSelectedStyle(style.id)}
-                      >
-                        <span className="style-emoji">{style.emoji}</span>
-                        <span className="style-name">{style.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+            <div className="plans-header">
+              <h2 className="section-title">Your Trip Plans</h2>
+              <button className="create-plan-btn" onClick={() => setShowForm(!showForm)}>
+                <Plus size={20} /> Create New Plan
+              </button>
+            </div>
 
-                {/* Destination */}
+            {showForm && (
+              <form className="create-plan-form" onSubmit={handleCreatePlan}>
                 <div className="form-group">
-                  <label className="form-label">Destination</label>
-                  <div className="input-group">
-                    <MapPin size={18} />
-                    <input
-                      type="text"
-                      name="destination"
-                      placeholder="e.g., Nairobi, Masai Mara, Mombasa"
-                      value={formData.destination}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
+                  <label>Title</label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleInputChange}
+                    required
+                  />
                 </div>
-
-                {/* Duration & Budget */}
+                <div className="form-group">
+                  <label>Description</label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                  />
+                </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Duration (days)</label>
-                    <div className="input-group">
-                      <Calendar size={18} />
-                      <input
-                        type="number"
-                        name="days"
-                        min="1"
-                        max="30"
-                        value={formData.days}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Budget</label>
-                    <select name="budget" value={formData.budget} onChange={handleInputChange}>
-                      <option value="budget">Budget (&lt; $50/day)</option>
-                      <option value="medium">Medium ($50-150/day)</option>
-                      <option value="luxury">Luxury (&gt; $150/day)</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Travelers */}
-                <div className="form-group">
-                  <label className="form-label">Number of Travelers</label>
-                  <div className="input-group">
-                    <Users size={18} />
+                    <label>Start Date</label>
                     <input
-                      type="number"
-                      name="travelers"
-                      min="1"
-                      max="20"
-                      value={formData.travelers}
+                      type="date"
+                      name="start_date"
+                      value={formData.start_date}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>End Date</label>
+                    <input
+                      type="date"
+                      name="end_date"
+                      value={formData.end_date}
                       onChange={handleInputChange}
                     />
                   </div>
                 </div>
-
-                <button type="submit" className="generate-btn">
-                  <Zap size={18} /> Generate My Itinerary
-                </button>
+                <button type="submit" className="submit-btn">Create Plan</button>
               </form>
+            )}
 
-              {/* Info Box */}
-              <div className="info-box">
-                <div className="info-icon">
-                  <Sparkles size={40} />
+            <div className="plans-grid">
+              {loading ? (
+                <div className="loading-state">
+                  <Brain size={48} />
+                  <p>Loading your trip plans...</p>
                 </div>
-                <h3>AI Magic in Action</h3>
-                <p>Our advanced algorithms analyze:</p>
-                <ul className="info-list">
-                  <li>Popular attractions & hidden gems</li>
-                  <li>Seasonal weather patterns</li>
-                  <li>Travel times and distances</li>
-                  <li>Local events and festivals</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* HOW IT WORKS SECTION */}
-        <section className="how-it-works">
-          <div className="container">
-            <h2 className="section-title">How It Works</h2>
-            <div className="steps-grid">
-              {steps.map((step, idx) => (
-                <div key={idx} className="step-card">
-                  <div className="step-number">{step.number}</div>
-                  <h3>{step.title}</h3>
-                  <p>{step.description}</p>
+              ) : tripPlans.length > 0 ? (
+                tripPlans.map(plan => (
+                  <div key={plan.id} className="plan-card">
+                    <h3>{plan.title}</h3>
+                    <p>{plan.description}</p>
+                    <div className="plan-dates">
+                      <Calendar size={16} />
+                      {plan.start_date && plan.end_date ? 
+                        `${new Date(plan.start_date).toLocaleDateString()} - ${new Date(plan.end_date).toLocaleDateString()}` :
+                        'Dates not set'
+                      }
+                    </div>
+                    <div className="plan-items">
+                      {plan.items && plan.items.length > 0 ? (
+                        <ul>
+                          {plan.items.map(item => (
+                            <li key={item.id}>{item.title}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p>No items yet</p>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="empty-state">
+                  <Brain size={48} />
+                  <p>No trip plans yet. Create your first plan!</p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </section>
