@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Menu, X, Search, User, Globe, LogIn, LogOut } from 'lucide-react';
 import '../css/navbar.css';
 
-const API_BASE = 'http://localhost/tripwise/backend/api';
+const API_BASE = 'http://localhost:8000/api';
 
 const NavBar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -11,6 +11,7 @@ const NavBar = () => {
   const [showAuth, setShowAuth] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
   const [authData, setAuthData] = useState({ email: '', password: '', name: '' });
+  const [showUserMenu, setShowUserMenu] = useState(false); // For user profile dropdown
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -22,8 +23,10 @@ const NavBar = () => {
   const fetchUser = async (token) => {
     try {
       const response = await fetch(`${API_BASE}/auth.php`, {
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       const data = await response.json();
@@ -51,16 +54,32 @@ const NavBar = () => {
         body: JSON.stringify(body)
       });
       const data = await response.json();
+      
+      // Handle successful response with token
       if (data.token) {
         localStorage.setItem('token', data.token);
         setUser(data.user);
         setShowAuth(false);
         setAuthData({ email: '', password: '', name: '' });
-      } else if (data.message) {
+        alert('Success! You are now logged in.');
+      } 
+      // Handle error response
+      else if (data.error) {
+        alert(`Error: ${data.error}`);
+      }
+      // Handle registration success (returns user_id instead of token)
+      else if (data.user_id && authMode === 'register') {
+        alert('Registration successful! Please log in now.');
+        setAuthMode('login');
+        setAuthData({ email: authData.email, password: authData.password, name: '' });
+      }
+      // Handle other success messages
+      else if (data.message) {
         alert(data.message);
       }
     } catch (error) {
       console.error('Auth error:', error);
+      alert('Failed to authenticate. Please try again.');
     }
   };
 
@@ -116,15 +135,43 @@ const NavBar = () => {
 
           {/* User Account */}
           {user ? (
-            <div className="user-menu">
-              <span className="user-name">Hi, {user.name}</span>
-              <button className="nav-icon-btn" onClick={handleLogout} aria-label="Logout">
-                <LogOut size={20} />
+            <div className="user-menu-container">
+              <button 
+                className="user-profile-btn"
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                aria-label="User menu"
+              >
+                <User size={20} />
+                <span className="user-name">Hi, {user.name}</span>
               </button>
+              
+              {/* User Dropdown Menu */}
+              {showUserMenu && (
+                <div className="user-dropdown-menu">
+                  <a href="/profile" className="dropdown-item profile-link">
+                    <User size={16} />
+                    Profile
+                  </a>
+                  <button 
+                    className="dropdown-item logout-btn"
+                    onClick={() => {
+                      handleLogout();
+                      setShowUserMenu(false);
+                    }}
+                  >
+                    <LogOut size={16} />
+                    Logout
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
-            <button className="nav-icon-btn" onClick={() => setShowAuth(!showAuth)} aria-label="Login">
-              <LogIn size={20} />
+            <button 
+              className="join-us-btn"
+              onClick={() => setShowAuth(!showAuth)}
+              aria-label="Join Us"
+            >
+              Join Us
             </button>
           )}
 

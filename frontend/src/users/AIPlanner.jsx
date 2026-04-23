@@ -4,7 +4,7 @@ import { Zap, MapPin, Calendar, Users, Brain, Sparkles, Plus } from 'lucide-reac
 import React, { useState, useEffect } from 'react';
 import './css/aiplanner.css';
 
-const API_BASE = 'http://localhost:8000/backend/api';
+const API_BASE = 'http://localhost:8000/api';
 
 function AIPlanner() {
   const [tripPlans, setTripPlans] = useState([]);

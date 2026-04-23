@@ -26,7 +26,7 @@ import React, { useState, useEffect } from 'react';
 import './css/reviews.css';
 
 // API base URL for backend requests
-const API_BASE = 'http://localhost:8000/backend/api';
+const API_BASE = 'http://localhost:8000/api';
 
 /**
  * Reviews Component

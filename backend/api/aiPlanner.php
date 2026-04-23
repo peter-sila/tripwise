@@ -1,4 +1,17 @@
 <?php
+// ====== CORS Headers for Cross-Origin Requests ======
+header("Access-Control-Allow-Origin: http://localhost:5173");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Credentials: true");
+header("Access-Control-Max-Age: 3600");
+
+// Handle CORS preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
 /**
  * AI Trip Planner API Endpoint
  * 
@@ -22,8 +35,16 @@ require_once __DIR__ . '/../includes/auth.php';
 
 // Enable CORS headers for cross-origin requests from frontend
 header("Access-Control-Allow-Origin: http://localhost:5173");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Credentials: true");
+header("Access-Control-Max-Age: 3600");
+
+// Handle CORS preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
 $method = $_SERVER['REQUEST_METHOD'];
 $pdo = getDBConnection();

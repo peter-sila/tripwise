@@ -22,7 +22,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import './css/destinations.css';
 
 // API base URL for all backend requests
-const API_BASE = 'http://localhost:8000/backend/api';
+const API_BASE = 'http://localhost:8000/api';
 
 /**
  * Category options displayed in filter buttons

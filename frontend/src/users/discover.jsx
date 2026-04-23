@@ -27,7 +27,7 @@ import React, { useState, useEffect } from 'react';
 import './css/discover.css';
 
 // API base URL for backend requests
-const API_BASE = 'http://localhost:8000/backend/api';
+const API_BASE = 'http://localhost:8000/api';
 
 /**
  * Available categories for filtering destinations
