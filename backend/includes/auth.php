@@ -122,7 +122,7 @@ function authenticateUser($email, $password) {
  * NOTE: Currently using simple token (user_id). Should be upgraded to JWT in production.
  * 
  * @return array Authenticated user data
- * @throws Exits with 401 Unauthorized if token missing or invalid
+ * @throws Exception with 401 Unauthorized if token missing or invalid
  */
 function requireAuth() {
     // Get all request headers (case-insensitive)
@@ -131,7 +131,7 @@ function requireAuth() {
 
     // Check for Bearer token format: "Bearer <token>"
     if (empty($authHeader) || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
-        sendResponse(['error' => 'Unauthorized'], 401);
+        throw new Exception('Unauthorized', 401);
     }
 
     // Extract token value

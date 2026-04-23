@@ -10,6 +10,12 @@ function AIPlanner() {
   const [tripPlans, setTripPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [features, setFeatures] = useState([
+    { icon: Zap, title: 'Fast & Efficient', description: 'Generate travel plans in seconds' },
+    { icon: MapPin, title: 'Local Insights', description: 'Discover hidden gems and local spots' },
+    { icon: Calendar, title: 'Smart Scheduling', description: 'Optimize your itinerary with AI' },
+    { icon: Users, title: 'Personalized Experience', description: 'Tailored recommendations for you' }
+  ]);
   const [formData, setFormData] = useState({
     title: '',
     description: '',

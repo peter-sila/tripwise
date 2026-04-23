@@ -21,7 +21,9 @@ require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../includes/auth.php';
 
 // Enable CORS headers for cross-origin requests from frontend
-enableCORS();
+header("Access-Control-Allow-Origin: http://localhost:5173");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
 $method = $_SERVER['REQUEST_METHOD'];
 $pdo = getDBConnection();

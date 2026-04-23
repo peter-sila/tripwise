@@ -5,6 +5,7 @@
 **TripWise** is a React + PHP travel planning application that helps users discover destinations, read reviews, get travel tips, and plan trips across Kenya.
 
 ### Tech Stack
+
 - **Frontend**: React 18+ with Vite
 - **Backend**: PHP 7.4+ with MySQL
 - **Database**: MySQL 5.7+
@@ -61,6 +62,7 @@ tripwise/
 ### Tables
 
 **users**
+
 - id (PK, INT, Auto-increment)
 - email (VARCHAR 255, UNIQUE)
 - password_hash (VARCHAR 255, bcrypt hashed)
@@ -69,6 +71,7 @@ tripwise/
 - updated_at (TIMESTAMP)
 
 **destinations**
+
 - id (PK, INT, Auto-increment)
 - name (VARCHAR 255)
 - description (TEXT)
@@ -78,6 +81,7 @@ tripwise/
 - created_at (TIMESTAMP)
 
 **reviews**
+
 - id (PK, INT, Auto-increment)
 - user_id (FK → users.id)
 - destination_id (FK → destinations.id)
@@ -86,6 +90,7 @@ tripwise/
 - created_at (TIMESTAMP)
 
 **travel_tips**
+
 - id (PK, INT, Auto-increment)
 - user_id (FK → users.id)
 - title (VARCHAR 255)
@@ -94,6 +99,7 @@ tripwise/
 - created_at (TIMESTAMP)
 
 **trip_plans**
+
 - id (PK, INT, Auto-increment)
 - user_id (FK → users.id)
 - title (VARCHAR 255)
@@ -103,6 +109,7 @@ tripwise/
 - created_at (TIMESTAMP)
 
 **trip_plan_items**
+
 - id (PK, INT, Auto-increment)
 - trip_plan_id (FK → trip_plans.id)
 - destination_id (FK → destinations.id, nullable)
@@ -195,30 +202,35 @@ tripwise/
 ## Key Features
 
 ### Authentication
+
 - User registration with email/password
 - Bcrypt password hashing for security
 - Token-based authentication (Bearer tokens)
 - Logout support
 
 ### Destination Management
+
 - Browse all destinations
 - Search by name/description/location
 - Filter by category
 - View destination details with images
 
 ### Reviews System
+
 - Read reviews for any destination
 - Rating system (1-5 stars)
 - User-submitted reviews
 - Sort and filter reviews
 
 ### Travel Tips
+
 - Community-contributed travel advice
 - Categorized tips (packing, safety, budget, etc.)
 - Author attribution
 - Date tracking
 
 ### Trip Planning
+
 - Create personalized trip plans
 - Set trip dates and duration
 - Add destinations to itinerary
@@ -229,13 +241,18 @@ tripwise/
 ## Setup Instructions
 
 ### 1. Database Setup
+
 ```bash
+
 mysql -u root -p < backend/db/tripwise.sql
 ```
 
 ### 2. Configure Backend
+
 Edit `backend/config/constants.php`:
+
 ```php
+
 <?php
 $host = 'localhost';
 $db = 'tripwise';
@@ -245,12 +262,14 @@ $pass = 'your_password';
 ```
 
 ### 3. Start PHP Server
+
 ```bash
 cd d:\wise\tripwise
 php -S localhost:8000
 ```
 
 ### 4. Start React Frontend
+
 ```bash
 cd frontend
 npm install
@@ -276,18 +295,21 @@ npm run dev
 ## Architecture Decisions
 
 ### Backend Design
+
 - **Stateless API** - Each request must include authentication token
 - **RESTful Endpoints** - One file per resource (destinations, reviews, etc.)
 - **CORS Enabled** - Allows frontend on different port to access API
 - **Error Handling** - Consistent JSON error responses
 
 ### Frontend Design
+
 - **Functional Components** - Uses React Hooks (useState, useEffect, useMemo)
 - **Component Isolation** - Each page is self-contained
 - **API Integration** - Fetch API calls with error handling
 - **Local State Management** - Component-level state for simplicity
 
 ### Database Design
+
 - **Normalized Schema** - Relationships via foreign keys
 - **Indexed Keys** - Performance optimization
 - **Timestamps** - Track creation/update times
@@ -298,12 +320,14 @@ npm run dev
 ## Common Workflows
 
 ### Adding a New Destination
+
 1. Make POST request to `/destinations.php` with title, description, location
 2. Include Bearer token in Authorization header
 3. Database stores destination with generated ID
 4. Frontend fetches and displays new destination
 
 ### Creating a Review
+
 1. User selects destination on Reviews page
 2. Fills in rating (1-5) and comment
 3. Makes POST request to `/reviews.php` with authentication
@@ -311,6 +335,7 @@ npm run dev
 5. Frontend refreshes and shows new review
 
 ### Planning a Trip
+
 1. User fills trip form (title, dates, description)
 2. Makes POST request to `/aiPlanner.php` with optional items array
 3. Backend creates trip and associated items in one transaction
@@ -321,6 +346,7 @@ npm run dev
 ## Testing the API
 
 ### Test Registration
+
 ```bash
 curl -X POST http://localhost:8000/backend/api/auth.php \
   -H "Content-Type: application/json" \
@@ -328,6 +354,7 @@ curl -X POST http://localhost:8000/backend/api/auth.php \
 ```
 
 ### Test Login
+
 ```bash
 curl -X POST http://localhost:8000/backend/api/auth.php \
   -H "Content-Type: application/json" \
@@ -335,12 +362,14 @@ curl -X POST http://localhost:8000/backend/api/auth.php \
 ```
 
 ### Test Authenticated Request
+
 ```bash
 curl http://localhost:8000/backend/api/aiPlanner.php \
   -H "Authorization: Bearer 1"
 ```
 
 ### Test Destination Search
+
 ```bash
 curl "http://localhost:8000/backend/api/destinations.php?search=safari&category=activity"
 ```
@@ -350,18 +379,22 @@ curl "http://localhost:8000/backend/api/destinations.php?search=safari&category=
 ## Troubleshooting
 
 ### CORS Errors
+
 **Problem**: "Access to fetch blocked by CORS policy"
 **Solution**: Ensure PHP server running on port 8000 and CORS enabled in config.php
 
 ### 404 API Errors
+
 **Problem**: "GET /tripwise/backend/api/destinations 404"
-**Solution**: Check API URL uses correct base (http://localhost:8000/backend/api)
+**Solution**: Check API URL uses correct base (<http://localhost:8000/backend/api>)
 
 ### Database Connection Failed
+
 **Problem**: "Database connection error"
 **Solution**: Verify MySQL running and credentials in constants.php
 
 ### Authentication Failures
+
 **Problem**: "401 Unauthorized"
 **Solution**: Verify token in Authorization header (format: `Bearer <token>`)
 
@@ -410,6 +443,7 @@ curl "http://localhost:8000/backend/api/destinations.php?search=safari&category=
 All code files have been thoroughly documented with comments:
 
 ### Backend Files (with full comments)
+
 - `backend/config/config.php` - Database setup & CORS (174 lines of documentation)
 - `backend/includes/auth.php` - Auth functions (250+ lines of documentation)
 - `backend/api/auth.php` - Auth endpoint
@@ -419,9 +453,11 @@ All code files have been thoroughly documented with comments:
 - `backend/api/aiPlanner.php` - Trip planner endpoint (comprehensive comments)
 
 ### Frontend Files (with JSDoc comments)
+
 - `frontend/src/users/destinations.jsx` - Destinations page with full JSDoc
 
 ### Documentation
+
 - `FRONTEND_GUIDE.md` - Complete frontend architecture guide
 - `SETUP_AND_API_REFERENCE.md` - API reference with examples
 
@@ -440,6 +476,7 @@ All code files have been thoroughly documented with comments:
 ### Common Code Patterns
 
 #### Fetching Data
+
 ```javascript
 const [data, setData] = useState([]);
 useEffect(() => {
@@ -448,13 +485,15 @@ useEffect(() => {
 ```
 
 #### Filtering with Memoization
+
 ```javascript
 const filtered = useMemo(() => 
   data.filter(item => item.category === filter)
 , [filter, data]);
 ```
 
-#### Authentication
+#### Authentication c
+
 ```javascript
 const token = localStorage.getItem('token');
 fetch(url, {
@@ -467,19 +506,23 @@ fetch(url, {
 ## Support & Debugging
 
 ### Enable Debug Mode
+
 Add to PHP files for detailed error output:
+
 ```php
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ```
 
 ### Browser DevTools
+
 1. Open DevTools (F12)
 2. Check Network tab for API calls
 3. Check Console for JavaScript errors
 4. Check Application tab for localStorage/tokens
 
 ### MySQL Debugging
+
 ```sql
 -- Check data in database
 SELECT * FROM destinations;
@@ -496,6 +539,7 @@ DESCRIBE destinations;
 ## Conclusion
 
 TripWise is a fully functional travel planning application with:
+
 - ✓ Complete database schema
 - ✓ RESTful PHP backend with security features
 - ✓ React frontend with modern hooks
