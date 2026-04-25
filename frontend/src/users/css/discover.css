@@ -164,6 +164,17 @@
   border-color: var(--primary-color);
 }
 
+.view-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+/* ====== MAP VIEW CONTAINER ====== */
+.map-view-container {
+  margin: 20px 0;
+  width: 100%;
+}
+
 /* ====== DISCOVERIES GRID ====== */
 .discoveries-grid {
   display: grid;

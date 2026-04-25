@@ -22,7 +22,8 @@
 
 import Navbar from "./statics/navbar.jsx";
 import Footer from "./statics/footer.jsx";
-import { Search, MapPin, Heart, Share2, Tag, TrendingUp, Filter, Map } from 'lucide-react';
+import MapView from "./MapView.jsx";
+import { Search, MapPin, Heart, Share2, Tag, TrendingUp, Filter, Map, Grid3x3 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { getTranslation } from '../utils/translations';
@@ -79,6 +80,7 @@ function Discover() {
   const [discoveries, setDiscoveries] = useState([]);           // Search results
   const [loading, setLoading] = useState(true);                 // Loading state
   const [favorites, setFavorites] = useState([]);               // Favorited destination IDs
+  const [viewMode, setViewMode] = useState('grid');             // View mode: 'grid' or 'map'
 
   /**
    * Effect Hook: Fetch discoveries when search or category changes
@@ -198,56 +200,85 @@ function Discover() {
             <div className="results-header">
               <h2>{getTranslation('searchResults', language)}: {discoveries.length}</h2>
               <div className="view-toggle">
-                <button className="view-btn active"><Map size={18} /> Grid</button>
+                <button 
+                  className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                  onClick={() => setViewMode('grid')}
+                  title="Grid view"
+                >
+                  <Grid3x3 size={18} /> Grid
+                </button>
+                <button 
+                  className={`view-btn ${viewMode === 'map' ? 'active' : ''}`}
+                  onClick={() => setViewMode('map')}
+                  title="Map view"
+                >
+                  <Map size={18} /> Map
+                </button>
               </div>
             </div>
 
-            <div className="discoveries-grid">
-              {loading ? (
-                <div className="loading-state">
-                  <Search size={48} />
-                  <p>{getTranslation('loading', language)}</p>
-                </div>
-              ) : discoveries.length > 0 ? (
-                discoveries.map(item => (
-                  <div key={item.id} className="discovery-card">
-                    <div className="discovery-image">
-                      <img src={item.image_url || item.image} alt={item.name} />
-                      <button
-                        className={`favorite-btn ${favorites.includes(item.id) ? 'active' : ''}`}
-                        onClick={() => toggleFavorite(item.id)}
-                        aria-label={getTranslation('addToFavorites', language)}
-                      >
-                        <Heart size={20} />
-                      </button>
-                    </div>
+            {/* Map View */}
+            {viewMode === 'map' && (
+              <div className="map-view-container">
+                <MapView 
+                  destinations={discoveries} 
+                  onMarkerClick={(destination) => {
+                    console.log('Clicked destination:', destination);
+                    // Could add modal/detail view here
+                  }}
+                />
+              </div>
+            )}
 
-                    <div className="discovery-content">
-                      <h3>{item.name}</h3>
-                      <div className="location">
-                        <MapPin size={16} /> {item.location}
-                      </div>
-                      <div className="rating">
-                        <span className="stars">⭐ {item.rating || 0}</span>
-                        <span className="reviews">({item.reviews || 0} {getTranslation('reviews', language)})</span>
-                      </div>
-
-                      <div className="card-actions">
-                        <button className="action-btn share-btn">
-                          <Share2 size={16} /> {getTranslation('share', language)}
-                        </button>
-                        <button className="action-btn learn-btn">{getTranslation('reviews', language)}</button>
-                      </div>
-                    </div>
+            {/* Grid View */}
+            {viewMode === 'grid' && (
+              <div className="discoveries-grid">
+                {loading ? (
+                  <div className="loading-state">
+                    <Search size={48} />
+                    <p>{getTranslation('loading', language)}</p>
                   </div>
-                ))
-              ) : (
-                <div className="empty-state">
-                  <Search size={48} />
-                  <p>{getTranslation('noResults', language)}</p>
-                </div>
-              )}
-            </div>
+                ) : discoveries.length > 0 ? (
+                  discoveries.map(item => (
+                    <div key={item.id} className="discovery-card">
+                      <div className="discovery-image">
+                        <img src={item.image_url || item.image} alt={item.name} />
+                        <button
+                          className={`favorite-btn ${favorites.includes(item.id) ? 'active' : ''}`}
+                          onClick={() => toggleFavorite(item.id)}
+                          aria-label={getTranslation('addToFavorites', language)}
+                        >
+                          <Heart size={20} />
+                        </button>
+                      </div>
+
+                      <div className="discovery-content">
+                        <h3>{item.name}</h3>
+                        <div className="location">
+                          <MapPin size={16} /> {item.location}
+                        </div>
+                        <div className="rating">
+                          <span className="stars">⭐ {item.rating || 0}</span>
+                          <span className="reviews">({item.reviews || 0} {getTranslation('reviews', language)})</span>
+                        </div>
+
+                        <div className="card-actions">
+                          <button className="action-btn share-btn">
+                            <Share2 size={16} /> {getTranslation('share', language)}
+                          </button>
+                          <button className="action-btn learn-btn">{getTranslation('reviews', language)}</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="empty-state">
+                    <Search size={48} />
+                    <p>{getTranslation('noResults', language)}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </section>
 

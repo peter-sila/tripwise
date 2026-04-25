@@ -45,6 +45,8 @@ export const translations = {
     addToFavorites: 'Add to Favorites',
     removeFromFavorites: 'Remove from Favorites',
     share: 'Share',
+    mapView: 'Map View',
+    gridView: 'Grid View',
     
     // AI Planner
     fastEfficient: 'Fast & Efficient',
@@ -177,6 +179,8 @@ export const translations = {
     addToFavorites: 'Agregar a Favoritos',
     removeFromFavorites: 'Eliminar de Favoritos',
     share: 'Compartir',
+    mapView: 'Vista de Mapa',
+    gridView: 'Vista de Cuadrícula',
     
     // AI Planner
     fastEfficient: 'Rápido y Eficiente',
@@ -309,6 +313,8 @@ export const translations = {
     addToFavorites: 'Ajouter aux Favoris',
     removeFromFavorites: 'Supprimer des Favoris',
     share: 'Partager',
+    mapView: 'Vue Carte',
+    gridView: 'Vue Grille',
     
     // AI Planner
     fastEfficient: 'Rapide et Efficace',
@@ -441,6 +447,8 @@ export const translations = {
     addToFavorites: 'Zu Favoriten Hinzufügen',
     removeFromFavorites: 'Aus Favoriten Entfernen',
     share: 'Teilen',
+    mapView: 'Kartenansicht',
+    gridView: 'Rasteransicht',
     
     // AI Planner
     fastEfficient: 'Schnell und Effizient',
@@ -573,6 +581,8 @@ export const translations = {
     addToFavorites: 'Aggiungi ai Preferiti',
     removeFromFavorites: 'Rimuovi dai Preferiti',
     share: 'Condividi',
+    mapView: 'Vista Mappa',
+    gridView: 'Vista Griglia',
     
     // AI Planner
     fastEfficient: 'Veloce ed Efficiente',
@@ -705,6 +715,8 @@ export const translations = {
     addToFavorites: 'Adicionar aos Favoritos',
     removeFromFavorites: 'Remover dos Favoritos',
     share: 'Compartilhar',
+    mapView: 'Visualização de Mapa',
+    gridView: 'Visualização em Grade',
     
     // AI Planner
     fastEfficient: 'Rápido e Eficiente',
@@ -837,6 +849,8 @@ export const translations = {
     addToFavorites: 'お気に入りに追加',
     removeFromFavorites: 'お気に入りから削除',
     share: '共有',
+    mapView: 'マップビュー',
+    gridView: 'グリッドビュー',
     
     // AI Planner
     fastEfficient: '高速で効率的',
@@ -969,6 +983,8 @@ export const translations = {
     addToFavorites: '添加到收藏夹',
     removeFromFavorites: '从收藏夹中删除',
     share: '分享',
+    mapView: '地图视图',
+    gridView: '网格视图',
     
     // AI Planner
     fastEfficient: '快速有效',

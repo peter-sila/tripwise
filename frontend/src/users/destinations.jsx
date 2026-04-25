@@ -17,7 +17,8 @@
 
 import Navbar from "./statics/navbar.jsx";
 import Footer from "./statics/footer.jsx";
-import { Bed, Coffee, Sparkles, Star, MapPin, Heart, Users } from 'lucide-react';
+import MapView from "./MapView.jsx";
+import { Bed, Coffee, Sparkles, Star, MapPin, Heart, Users, Map, Grid3x3 } from 'lucide-react';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { getTranslation } from '../utils/translations';
@@ -61,6 +62,7 @@ function Destinations() {
   const [destinations, setDestinations] = useState([]);    // All destinations from API
   const [loading, setLoading] = useState(true);            // Loading indicator
   const [activeCategory, setActiveCategory] = useState(''); // Selected filter category
+  const [viewMode, setViewMode] = useState('grid');         // View mode: 'grid' or 'map'
 
   // Dynamic category options based on language
   const heroCategories = [
@@ -206,8 +208,27 @@ function Destinations() {
         {/* SECTION 3: FEATURED DESTINATIONS */}
         <section className="listings-section">
           <div className="container">
-            <h2 className="section-title">{getTranslation('exploreDestinations', language)}</h2>
+            <div className="listings-header">
+              <h2 className="section-title">{getTranslation('exploreDestinations', language)}</h2>
+              <div className="view-toggle">
+                <button 
+                  className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                  onClick={() => setViewMode('grid')}
+                  title="Grid view"
+                >
+                  <Grid3x3 size={18} /> {getTranslation('gridView', language)}
+                </button>
+                <button 
+                  className={`view-btn ${viewMode === 'map' ? 'active' : ''}`}
+                  onClick={() => setViewMode('map')}
+                  title="Map view"
+                >
+                  <Map size={18} /> {getTranslation('mapView', language)}
+                </button>
+              </div>
+            </div>
             <div className="content-layout">
+              {viewMode === 'grid' && (
               <div className="cards-grid">
                 {loading ? (
                   <div className="loading-state">
@@ -242,16 +263,18 @@ function Destinations() {
                   </div>
                 )}
               </div>
+              )}
               
-              {/* MAP PLACEHOLDER */}
-              <div className="map-placeholder">
-                <div className="map-mock-bg">
-                  <div className="map-content">
-                    <MapPin size={48} />
-                    <p>Map View</p>
-                  </div>
-                </div>
+              {viewMode === 'map' && (
+              <div className="map-view-container">
+                <MapView 
+                  destinations={filteredDestinations} 
+                  onMarkerClick={(destination) => {
+                    console.log('Clicked destination:', destination);
+                  }}
+                />
               </div>
+              )}
             </div>
           </div>
         </section>
