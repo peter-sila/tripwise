@@ -24,6 +24,8 @@ import Navbar from "./statics/navbar.jsx";
 import Footer from "./statics/footer.jsx";
 import { Search, MapPin, Heart, Share2, Tag, TrendingUp, Filter, Map } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
+import { getTranslation } from '../utils/translations';
 import './css/discover.css';
 
 // API base URL for backend requests
@@ -57,6 +59,18 @@ const categories = [
  * @returns {JSX.Element} Rendered discover page
  */
 function Discover() {
+  const { language } = useLanguage();
+  
+  // Category options with translations
+  const categories = [
+    { id: '', label: getTranslation('all', language), emoji: '🌍' },
+    { id: 'nature', label: getTranslation('nature', language), emoji: '🌲' },
+    { id: 'culture', label: getTranslation('culture', language), emoji: '🎭' },
+    { id: 'adventure', label: getTranslation('adventure', language), emoji: '🏃' },
+    { id: 'food', label: getTranslation('food', language), emoji: '🍽️' },
+    { id: 'shopping', label: getTranslation('shopping', language), emoji: '🛍️' },
+  ];
+  
   // Filter state
   const [activeCategory, setActiveCategory] = useState('');     // Current category filter
   const [searchTerm, setSearchTerm] = useState('');             // Current search text
@@ -144,8 +158,8 @@ function Discover() {
         {/* HERO SECTION */}
         <header className="page-header">
           <div className="container">
-            <h1>Discover Hidden Gems</h1>
-            <p>Explore unique experiences curated by our community</p>
+            <h1>{getTranslation('discover', language)}</h1>
+            <p>{getTranslation('searchDestinations', language)}</p>
           </div>
         </header>
 
@@ -156,7 +170,7 @@ function Discover() {
               <Search size={20} />
               <input
                 type="text"
-                placeholder="Search destinations, attractions, experiences..."
+                placeholder={getTranslation('searchPlaceholder', language)}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -182,7 +196,7 @@ function Discover() {
         <section className="results-section">
           <div className="container">
             <div className="results-header">
-              <h2>Found {discoveries.length} discoveries</h2>
+              <h2>{getTranslation('searchResults', language)}: {discoveries.length}</h2>
               <div className="view-toggle">
                 <button className="view-btn active"><Map size={18} /> Grid</button>
               </div>
@@ -192,7 +206,7 @@ function Discover() {
               {loading ? (
                 <div className="loading-state">
                   <Search size={48} />
-                  <p>Loading discoveries...</p>
+                  <p>{getTranslation('loading', language)}</p>
                 </div>
               ) : discoveries.length > 0 ? (
                 discoveries.map(item => (
@@ -202,7 +216,7 @@ function Discover() {
                       <button
                         className={`favorite-btn ${favorites.includes(item.id) ? 'active' : ''}`}
                         onClick={() => toggleFavorite(item.id)}
-                        aria-label="Add to favorites"
+                        aria-label={getTranslation('addToFavorites', language)}
                       >
                         <Heart size={20} />
                       </button>
@@ -215,14 +229,14 @@ function Discover() {
                       </div>
                       <div className="rating">
                         <span className="stars">⭐ {item.rating || 0}</span>
-                        <span className="reviews">({item.reviews || 0} reviews)</span>
+                        <span className="reviews">({item.reviews || 0} {getTranslation('reviews', language)})</span>
                       </div>
 
                       <div className="card-actions">
                         <button className="action-btn share-btn">
-                          <Share2 size={16} /> Share
+                          <Share2 size={16} /> {getTranslation('share', language)}
                         </button>
-                        <button className="action-btn learn-btn">Learn More</button>
+                        <button className="action-btn learn-btn">{getTranslation('reviews', language)}</button>
                       </div>
                     </div>
                   </div>
@@ -230,7 +244,7 @@ function Discover() {
               ) : (
                 <div className="empty-state">
                   <Search size={48} />
-                  <p>No discoveries found. Try a different search or category!</p>
+                  <p>{getTranslation('noResults', language)}</p>
                 </div>
               )}
             </div>

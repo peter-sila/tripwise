@@ -1,10 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Menu, X, Search, User, Globe, LogIn, LogOut } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
+import { useLanguage } from '../../context/LanguageContext';
+import { getTranslation } from '../../utils/translations';
 import '../css/navbar.css';
 
 const API_BASE = 'http://localhost:8000/api';
 
 const NavBar = () => {
+  const { language, changeLanguage } = useLanguage();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [user, setUser] = useState(null);
@@ -12,12 +16,30 @@ const NavBar = () => {
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
   const [authData, setAuthData] = useState({ email: '', password: '', name: '' });
   const [showUserMenu, setShowUserMenu] = useState(false); // For user profile dropdown
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false); // For language selector
+  const languageMenuRef = useRef(null);
+  const userMenuRef = useRef(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
       fetchUser(token);
     }
+  }, []);
+
+  // Close menus when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (languageMenuRef.current && !languageMenuRef.current.contains(event.target)) {
+        setShowLanguageMenu(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const fetchUser = async (token) => {
@@ -61,7 +83,7 @@ const NavBar = () => {
         setUser(data.user);
         setShowAuth(false);
         setAuthData({ email: '', password: '', name: '' });
-        alert('Success! You are now logged in.');
+        alert(getTranslation('loginSuccess', language));
       } 
       // Handle error response
       else if (data.error) {
@@ -69,7 +91,7 @@ const NavBar = () => {
       }
       // Handle registration success (returns user_id instead of token)
       else if (data.user_id && authMode === 'register') {
-        alert('Registration successful! Please log in now.');
+        alert(getTranslation('registerSuccess', language));
         setAuthMode('login');
         setAuthData({ email: authData.email, password: authData.password, name: '' });
       }
@@ -79,7 +101,7 @@ const NavBar = () => {
       }
     } catch (error) {
       console.error('Auth error:', error);
-      alert('Failed to authenticate. Please try again.');
+      alert(getTranslation('loginError', language));
     }
   };
 
@@ -88,15 +110,65 @@ const NavBar = () => {
     setUser(null);
   };
 
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      const response = await fetch(`${API_BASE}/google-auth.php`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'google_signin',
+          id_token: credentialResponse.credential
+        })
+      });
+      const data = await response.json();
+      
+      if (data.success && data.token) {
+        localStorage.setItem('token', data.token);
+        setUser(data.user);
+        setShowAuth(false);
+        setAuthData({ email: '', password: '', name: '' });
+        alert(getTranslation('loginSuccess', language));
+      } else if (data.error) {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Google auth error:', error);
+      alert(getTranslation('loginError', language));
+    }
+  };
+
+  const handleGoogleError = () => {
+    console.log('Google Login Failed');
+    alert('Google Sign-In failed. Please try again.');
+  };
+
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const toggleSearch = () => setIsSearchOpen(!isSearchOpen);
 
+  const languages = [
+    { code: 'en', name: 'English', flag: '🇬🇧' },
+    { code: 'es', name: 'Español', flag: '🇪🇸' },
+    { code: 'fr', name: 'Français', flag: '🇫🇷' },
+    { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+    { code: 'it', name: 'Italiano', flag: '🇮🇹' },
+    { code: 'pt', name: 'Português', flag: '🇵🇹' },
+    { code: 'ja', name: '日本語', flag: '🇯🇵' },
+    { code: 'zh', name: '中文', flag: '🇨🇳' },
+  ];
+
+  const handleLanguageSelect = (languageCode) => {
+    changeLanguage(languageCode);
+    setShowLanguageMenu(false);
+  };
+
   const navLinks = [
-    { label: 'Destinations', href: '/' },
-    { label: 'Discover', href: '/discover' },
-    { label: 'AI Planner', href: '/ai-planner' },
-    { label: 'Travel Tips', href: '/travel-tips' },
-    { label: 'Reviews', href: '/reviews' },
+    { label: getTranslation('destinations', language), href: '/' },
+    { label: getTranslation('discover', language), href: '/discover' },
+    { label: getTranslation('aiPlanner', language), href: '/ai-planner' },
+    { label: getTranslation('travelTips', language), href: '/travel-tips' },
+    { label: getTranslation('reviews', language), href: '/reviews' },
   ];
 
   return (
@@ -123,19 +195,44 @@ const NavBar = () => {
           <button 
             className="nav-icon-btn search-btn"
             onClick={toggleSearch}
-            aria-label="Search"
+            aria-label={getTranslation('search', language)}
           >
             <Search size={20} />
           </button>
 
           {/* Language Selector */}
-          <button className="nav-icon-btn" aria-label="Language">
-            <Globe size={20} />
-          </button>
+          <div className="language-menu-container" ref={languageMenuRef}>
+            <button 
+              className="nav-icon-btn language-btn"
+              onClick={() => setShowLanguageMenu(!showLanguageMenu)}
+              aria-label={getTranslation('selectLanguage', language)}
+              title={getTranslation('selectLanguage', language)}
+            >
+              <Globe size={20} />
+            </button>
+
+            {/* Language Dropdown Menu */}
+            {showLanguageMenu && (
+              <div className="language-dropdown-menu">
+                <div className="language-dropdown-header">{getTranslation('selectLanguage', language)}</div>
+                {languages.map((lang) => (
+                  <button
+                    key={lang.code}
+                    className={`language-item ${language === lang.code ? 'active' : ''}`}
+                    onClick={() => handleLanguageSelect(lang.code)}
+                  >
+                    <span className="language-flag">{lang.flag}</span>
+                    <span className="language-name">{lang.name}</span>
+                    {language === lang.code && <span className="language-check">✓</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* User Account */}
           {user ? (
-            <div className="user-menu-container">
+            <div className="user-menu-container" ref={userMenuRef}>
               <button 
                 className="user-profile-btn"
                 onClick={() => setShowUserMenu(!showUserMenu)}
@@ -150,7 +247,7 @@ const NavBar = () => {
                 <div className="user-dropdown-menu">
                   <a href="/profile" className="dropdown-item profile-link">
                     <User size={16} />
-                    Profile
+                    {getTranslation('profile', language)}
                   </a>
                   <button 
                     className="dropdown-item logout-btn"
@@ -160,7 +257,7 @@ const NavBar = () => {
                     }}
                   >
                     <LogOut size={16} />
-                    Logout
+                    {getTranslation('logout', language)}
                   </button>
                 </div>
               )}
@@ -169,9 +266,9 @@ const NavBar = () => {
             <button 
               className="join-us-btn"
               onClick={() => setShowAuth(!showAuth)}
-              aria-label="Join Us"
+              aria-label={getTranslation('joinUs', language)}
             >
-              Join Us
+              {getTranslation('joinUs', language)}
             </button>
           )}
 
@@ -191,12 +288,12 @@ const NavBar = () => {
         <div className="auth-modal">
           <div className="auth-container">
             <button className="auth-close" onClick={() => setShowAuth(false)}>×</button>
-            <h3>{authMode === 'login' ? 'Login' : 'Register'}</h3>
+            <h3>{authMode === 'login' ? getTranslation('login', language) : getTranslation('register', language)}</h3>
             <form onSubmit={handleAuth}>
               {authMode === 'register' && (
                 <input
                   type="text"
-                  placeholder="Name"
+                  placeholder={getTranslation('name', language)}
                   value={authData.name}
                   onChange={(e) => setAuthData({...authData, name: e.target.value})}
                   required
@@ -204,25 +301,39 @@ const NavBar = () => {
               )}
               <input
                 type="email"
-                placeholder="Email"
+                placeholder={getTranslation('email', language)}
                 value={authData.email}
                 onChange={(e) => setAuthData({...authData, email: e.target.value})}
                 required
               />
               <input
                 type="password"
-                placeholder="Password"
+                placeholder={getTranslation('password', language)}
                 value={authData.password}
                 onChange={(e) => setAuthData({...authData, password: e.target.value})}
                 required
               />
-              <button type="submit">{authMode === 'login' ? 'Login' : 'Register'}</button>
+              <button type="submit">{authMode === 'login' ? getTranslation('login', language) : getTranslation('register', language)}</button>
             </form>
+
+            {/* Google Sign-In */}
+            <div className="auth-divider">
+              <span>{getTranslation('orContinueWith', language)}</span>
+            </div>
+            <div className="google-signin-container">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                text={authMode === 'login' ? 'signin_with' : 'signup_with'}
+                locale={language}
+              />
+            </div>
+
             <button 
               className="auth-switch" 
               onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
             >
-              {authMode === 'login' ? 'Need an account? Register' : 'Have an account? Login'}
+              {authMode === 'login' ? getTranslation('needAccount', language) : getTranslation('haveAccount', language)}
             </button>
           </div>
         </div>
@@ -235,7 +346,7 @@ const NavBar = () => {
             <input 
               type="text" 
               className="search-input" 
-              placeholder="Search destinations, activities, restaurants..."
+              placeholder={getTranslation('searchPlaceholder', language)}
               autoFocus
             />
           </div>

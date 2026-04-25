@@ -3,7 +3,7 @@ import '../css/footer.css';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
-
+ 
   const footerLinks = {
     company: [
       { label: 'About Us', href: '#' },

@@ -23,6 +23,8 @@ import Navbar from "./statics/navbar.jsx";
 import Footer from "./statics/footer.jsx";
 import { AlertCircle, Heart, Clock, DollarSign, Shield, Lightbulb, BookOpen, ChevronRight } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
+import { getTranslation } from '../utils/translations';
 import './css/traveltips.css';
 
 // API base URL for backend requests
@@ -56,6 +58,17 @@ const categories = [
  * @returns {JSX.Element} Rendered travel tips page
  */
 function TravelTips() {
+  const { language } = useLanguage();
+  
+  const categories = [
+    { id: '', label: getTranslation('allTips', language), icon: '📚' },
+    { id: 'packing', label: getTranslation('packing', language), icon: '🎒' },
+    { id: 'safety', label: getTranslation('safety', language), icon: '🛡️' },
+    { id: 'budget', label: getTranslation('budget', language), icon: '💰' },
+    { id: 'health', label: getTranslation('health', language), icon: '💊' },
+    { id: 'culture', label: getTranslation('culture', language), icon: '🎭' },
+    { id: 'transport', label: getTranslation('transportTips', language), icon: '🚗' },
+  ];
   // Data state
   const [tips, setTips] = useState([]);                   // All tips from API
   const [loading, setLoading] = useState(true);           // Loading indicator
@@ -134,8 +147,8 @@ function TravelTips() {
           <div className="container">
             <div className="hero-content">
               <Lightbulb size={48} className="hero-icon" />
-              <h1>Travel Tips & Guides</h1>
-              <p>Expert advice to make your Kenya trip unforgettable</p>
+              <h1>{getTranslation('travelAdvice', language)}</h1>
+              <p>{getTranslation('expertAdvice', language)}</p>
             </div>
           </div>
         </header>
@@ -147,23 +160,23 @@ function TravelTips() {
               {/* Quick tip: Best travel season */}
               <div className="quick-tip-card">
                 <AlertCircle size={32} />
-                <h3>Best Time to Visit</h3>
-                <p>June-October for wildlife viewing; November-March for beaches</p>
+                <h3>{getTranslation('bestTimeToVisit', language)}</h3>
+                <p>{getTranslation('bestTimeDescription', language)}</p>
               </div>
               <div className="quick-tip-card">
                 <Heart size={32} />
-                <h3>What to Love</h3>
-                <p>Authentic culture, incredible wildlife, and stunning landscapes</p>
+                <h3>{getTranslation('whatToLove', language)}</h3>
+                <p>{getTranslation('whatToLoveDescription', language)}</p>
               </div>
               <div className="quick-tip-card">
                 <Clock size={32} />
-                <h3>Time Zone</h3>
-                <p>Kenya Standard Time (KST): UTC+3, No daylight saving time</p>
+                <h3>{getTranslation('timeZone', language)}</h3>
+                <p>{getTranslation('timeZoneDescription', language)}</p>
               </div>
               <div className="quick-tip-card">
                 <DollarSign size={32} />
-                <h3>Currency</h3>
-                <p>Kenyan Shilling (KES): 1 USD ≈ 130-140 KES</p>
+                <h3>{getTranslation('currency', language)}</h3>
+                <p>{getTranslation('currencyDescription', language)}</p>
               </div>
             </div>
           </div>
@@ -175,7 +188,7 @@ function TravelTips() {
             <div className="tips-layout">
               {/* Category Sidebar Filter */}
               <aside className="tips-sidebar">
-                <h3>Categories</h3>
+                <h3>{getTranslation('categories', language)}</h3>
                 <div className="category-list">
                   {categories.map(cat => (
                     <button
@@ -204,7 +217,7 @@ function TravelTips() {
                   {loading ? (
                     <div className="loading-state">
                       <BookOpen size={48} />
-                      <p>Loading tips...</p>
+                      <p>{getTranslation('loading', language)}</p>
                     </div>
                   ) : filteredTips.length > 0 ? (
                     // Tip Cards - Each tip is expandable
@@ -228,7 +241,7 @@ function TravelTips() {
                           <div className="tip-content">
                             <p>{tip.content}</p>
                             <div className="tip-footer">
-                              <span className="author">By {tip.user_name}</span>
+                              <span className="author">{getTranslation('by', language)} {tip.user_name}</span>
                               <span className="date">{new Date(tip.created_at).toLocaleDateString()}</span>
                             </div>
                           </div>
@@ -244,7 +257,7 @@ function TravelTips() {
                     // Empty State - No tips found in selected category
                     <div className="empty-state">
                       <BookOpen size={48} />
-                      <p>No tips found in this category.</p>
+                      <p>{getTranslation('noTips', language)}</p>
                     </div>
                   )}
                 </div>
@@ -257,9 +270,9 @@ function TravelTips() {
         <section className="cta-section">
           <div className="container">
             <div className="cta-content">
-              <h2>Ready for Your Adventure?</h2>
-              <p>Now that you have all the tips, start planning your perfect Kenya trip</p>
-              <button className="cta-button">Start Planning</button>
+              <h2>{getTranslation('readyForAdventure', language)}</h2>
+              <p>{getTranslation('ctaDescription', language)}</p>
+              <button className="cta-button">{getTranslation('startPlanning', language)}</button>
             </div>
           </div>
         </section>

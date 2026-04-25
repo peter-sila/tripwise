@@ -2,19 +2,23 @@ import Navbar from "./statics/navbar.jsx";
 import Footer from "./statics/footer.jsx";
 import { Zap, MapPin, Calendar, Users, Brain, Sparkles, Plus } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
+import { getTranslation } from '../utils/translations';
 import './css/aiplanner.css';
 
 const API_BASE = 'http://localhost:8000/api';
 
 function AIPlanner() {
+  const { language } = useLanguage();
+  
   const [tripPlans, setTripPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [features, setFeatures] = useState([
-    { icon: Zap, title: 'Fast & Efficient', description: 'Generate travel plans in seconds' },
-    { icon: MapPin, title: 'Local Insights', description: 'Discover hidden gems and local spots' },
-    { icon: Calendar, title: 'Smart Scheduling', description: 'Optimize your itinerary with AI' },
-    { icon: Users, title: 'Personalized Experience', description: 'Tailored recommendations for you' }
+    { icon: Zap, title: getTranslation('fastEfficient', language), description: getTranslation('generateTravelPlans', language) },
+    { icon: MapPin, title: getTranslation('localInsights', language), description: getTranslation('discoverHiddenGems', language) },
+    { icon: Calendar, title: getTranslation('smartScheduling', language), description: getTranslation('optimizeItinerary', language) },
+    { icon: Users, title: getTranslation('personalizedExperience', language), description: getTranslation('tailoredRecommendations', language) }
   ]);
   const [formData, setFormData] = useState({
     title: '',
@@ -103,10 +107,10 @@ function AIPlanner() {
           <div className="container">
             <div className="hero-content">
               <div className="hero-badge">
-                <Brain size={20} /> AI-Powered Planning
+                <Brain size={20} /> {getTranslation('aiPlanner', language)}
               </div>
-              <h1>Your Personal Travel Planner</h1>
-              <p>Let AI create your perfect Kenyan adventure in seconds</p>
+              <h1>{getTranslation('myTripPlans', language)}</h1>
+              <p>{getTranslation('startPlanningYourTrip', language)}</p>
             </div>
           </div>
         </header>
@@ -114,7 +118,7 @@ function AIPlanner() {
         {/* FEATURES SECTION */}
         <section className="features-section">
           <div className="container">
-            <h2 className="section-title">Why Choose AI Planner?</h2>
+            <h2 className="section-title">{getTranslation('getRecommendations', language)}</h2>
             <div className="features-grid">
               {features.map((feature, idx) => {
                 const IconComponent = feature.icon;
@@ -136,16 +140,16 @@ function AIPlanner() {
         <section className="plans-section">
           <div className="container">
             <div className="plans-header">
-              <h2 className="section-title">Your Trip Plans</h2>
+              <h2 className="section-title">{getTranslation('myTripPlans', language)}</h2>
               <button className="create-plan-btn" onClick={() => setShowForm(!showForm)}>
-                <Plus size={20} /> Create New Plan
+                <Plus size={20} /> {getTranslation('createNewPlan', language)}
               </button>
             </div>
 
             {showForm && (
               <form className="create-plan-form" onSubmit={handleCreatePlan}>
                 <div className="form-group">
-                  <label>Title</label>
+                  <label>{getTranslation('planTitle', language)}</label>
                   <input
                     type="text"
                     name="title"
@@ -155,7 +159,7 @@ function AIPlanner() {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Description</label>
+                  <label>{getTranslation('planDescription', language)}</label>
                   <textarea
                     name="description"
                     value={formData.description}
@@ -164,7 +168,7 @@ function AIPlanner() {
                 </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Start Date</label>
+                    <label>{getTranslation('startDate', language)}</label>
                     <input
                       type="date"
                       name="start_date"
@@ -173,7 +177,7 @@ function AIPlanner() {
                     />
                   </div>
                   <div className="form-group">
-                    <label>End Date</label>
+                    <label>{getTranslation('endDate', language)}</label>
                     <input
                       type="date"
                       name="end_date"
@@ -182,7 +186,7 @@ function AIPlanner() {
                     />
                   </div>
                 </div>
-                <button type="submit" className="submit-btn">Create Plan</button>
+                <button type="submit" className="submit-btn">{getTranslation('createPlan', language)}</button>
               </form>
             )}
 
@@ -190,7 +194,7 @@ function AIPlanner() {
               {loading ? (
                 <div className="loading-state">
                   <Brain size={48} />
-                  <p>Loading your trip plans...</p>
+                  <p>{getTranslation('loading', language)}</p>
                 </div>
               ) : tripPlans.length > 0 ? (
                 tripPlans.map(plan => (
@@ -201,7 +205,7 @@ function AIPlanner() {
                       <Calendar size={16} />
                       {plan.start_date && plan.end_date ? 
                         `${new Date(plan.start_date).toLocaleDateString()} - ${new Date(plan.end_date).toLocaleDateString()}` :
-                        'Dates not set'
+                        getTranslation('noPlans', language)
                       }
                     </div>
                     <div className="plan-items">
@@ -212,7 +216,7 @@ function AIPlanner() {
                           ))}
                         </ul>
                       ) : (
-                        <p>No items yet</p>
+                        <p>{getTranslation('noPlans', language)}</p>
                       )}
                     </div>
                   </div>
@@ -220,7 +224,7 @@ function AIPlanner() {
               ) : (
                 <div className="empty-state">
                   <Brain size={48} />
-                  <p>No trip plans yet. Create your first plan!</p>
+                  <p>{getTranslation('startPlanningYourTrip', language)}</p>
                 </div>
               )}
             </div>
@@ -231,9 +235,9 @@ function AIPlanner() {
         <section className="cta-section">
           <div className="container">
             <div className="cta-content">
-              <h2>Ready to Plan Your Adventure?</h2>
-              <p>Start creating your personalized itinerary in less than a minute</p>
-              <button className="cta-button">Get Started Now</button>
+              <h2>{getTranslation('planYourTrip', language)}</h2>
+              <p>{getTranslation('startPlanningYourTrip', language)}</p>
+              <button className="cta-button">{getTranslation('createNewPlan', language)}</button>
             </div>
           </div>
         </section>

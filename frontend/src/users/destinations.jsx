@@ -19,6 +19,8 @@ import Navbar from "./statics/navbar.jsx";
 import Footer from "./statics/footer.jsx";
 import { Bed, Coffee, Sparkles, Star, MapPin, Heart, Users } from 'lucide-react';
 import React, { useState, useEffect, useMemo } from 'react';
+import { useLanguage } from '../context/LanguageContext';
+import { getTranslation } from '../utils/translations';
 import './css/destinations.css';
 
 // API base URL for all backend requests
@@ -32,6 +34,7 @@ const heroCategories = [
   { label: 'All', value: '', icon: Sparkles },           // Show all destinations
   { label: 'Hotels', value: 'accommodation', icon: Bed }, // Filter accommodations
   { label: 'Restaurants', value: 'gastronomy', icon: Coffee }, // Filter restaurants
+  { label: 'Adventures', value: 'adventure', icon: Users }, // Filter adventures
   { label: 'Activities', value: 'activity', icon: Sparkles }, // Filter activities
 ];
 
@@ -53,10 +56,39 @@ const perks = [
  * @returns {JSX.Element} Rendered destinations page
  */
 function Destinations() {
+  const { language } = useLanguage();
   // State management
   const [destinations, setDestinations] = useState([]);    // All destinations from API
   const [loading, setLoading] = useState(true);            // Loading indicator
   const [activeCategory, setActiveCategory] = useState(''); // Selected filter category
+
+  // Dynamic category options based on language
+  const heroCategories = [
+    { label: getTranslation('all', language), value: '', icon: Sparkles },
+    { label: getTranslation('hotels', language), value: 'accommodation', icon: Bed },
+    { label: getTranslation('restaurants', language), value: 'gastronomy', icon: Coffee },
+    { label: getTranslation('adventures', language), value: 'adventure', icon: Users },
+    { label: getTranslation('activities', language), value: 'activity', icon: Sparkles },
+  ];
+
+  // Dynamic perks based on language
+  const perks = [
+    { 
+      title: getTranslation('curatedStays', language), 
+      value: '120+', 
+      description: getTranslation('handpicked', language) 
+    },
+    { 
+      title: getTranslation('topRated', language), 
+      value: '4.8 ★', 
+      description: getTranslation('trustedReviews', language) 
+    },
+    { 
+      title: getTranslation('localGuides', language), 
+      value: '50+', 
+      description: getTranslation('authenticExperiences', language) 
+    },
+  ];
 
   /**
    * Effect Hook - Fetch destinations on component mount
@@ -129,8 +161,8 @@ function Destinations() {
         {/* HEADER */}
         <header className="page-header">
           <div className="container">
-            <h1>Discover unforgettable experiences in Kenya</h1>
-            <p>Explore curated accommodations, dining, and activities.</p>
+            <h1>{getTranslation('welcome', language)}</h1>
+            <p>{getTranslation('exploreDestinations', language)}</p>
           </div>
         </header>
 
@@ -139,8 +171,8 @@ function Destinations() {
           <div className="container">
             <div className="hero-grid">
               <div className="hero-content">
-                <div className="badge"><Sparkles size={16} /> Popular categories</div>
-                <h2>Find the best stay, bite, and adventure.</h2>
+                <div className="badge"><Sparkles size={16} /> {getTranslation('all', language)}</div>
+                <h2>{getTranslation('planYourTrip', language)}</h2>
                 <div className="perks-list">
                   {perks.map(perk => (
                     <div key={perk.title} className="perk-item">
@@ -174,13 +206,13 @@ function Destinations() {
         {/* SECTION 3: FEATURED DESTINATIONS */}
         <section className="listings-section">
           <div className="container">
-            <h2 className="section-title">Featured Destinations</h2>
+            <h2 className="section-title">{getTranslation('exploreDestinations', language)}</h2>
             <div className="content-layout">
               <div className="cards-grid">
                 {loading ? (
                   <div className="loading-state">
                     <Sparkles size={48} />
-                    <p>Loading destinations...</p>
+                    <p>{getTranslation('loading', language)}</p>
                   </div>
                 ) : featuredDestinations.length > 0 ? (
                   featuredDestinations.map((place) => (
@@ -206,7 +238,7 @@ function Destinations() {
                 ) : (
                   <div className="empty-state">
                     <Sparkles size={48} />
-                    <p>No destinations found. Try a different category!</p>
+                    <p>{getTranslation('noDestinations', language)}</p>
                   </div>
                 )}
               </div>

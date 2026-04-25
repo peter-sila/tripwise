@@ -23,6 +23,8 @@ import Navbar from "./statics/navbar.jsx";
 import Footer from "./statics/footer.jsx";
 import { Star, ThumbsUp, MessageCircle, User, Calendar, MapPin, Filter } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
+import { getTranslation } from '../utils/translations';
 import './css/reviews.css';
 
 // API base URL for backend requests
@@ -44,6 +46,8 @@ const API_BASE = 'http://localhost:8000/api';
  * @returns {JSX.Element} Rendered reviews page
  */
 function Reviews() {
+  const { language } = useLanguage();
+  
   // State for reviews data
   const [reviews, setReviews] = useState([]);         // Reviews for current destination
   const [destinations, setDestinations] = useState([]); // All destinations available
@@ -53,6 +57,20 @@ function Reviews() {
   const [loading, setLoading] = useState(true);       // Loading state for data fetching
   const [sortBy, setSortBy] = useState('recent');     // Sort order for reviews
   const [filterRating, setFilterRating] = useState('all'); // Rating filter threshold
+
+  // Sort options with translations
+  const sortOptions = [
+    { value: 'recent', label: getTranslation('recent', language) },
+    { value: 'rating', label: getTranslation('highestRated', language) }
+  ];
+
+  // Filter options with translations
+  const filterOptions = [
+    { value: 'all', label: getTranslation('allRatings', language) },
+    { value: '5', label: getTranslation('fiveStars', language) },
+    { value: '4', label: getTranslation('fourPlus', language) },
+    { value: '3', label: getTranslation('threePlus', language) }
+  ];
 
   // Effect Hook 1: Fetch destinations on component mount
   // Runs once when component first renders (empty dependency array)
@@ -197,8 +215,8 @@ function Reviews() {
         {/* HERO SECTION - Page title and description */}
         <header className="page-header">
           <div className="container">
-            <h1>Community Reviews</h1>
-            <p>Read authentic experiences from travelers like you</p>
+            <h1>{getTranslation('reviews', language)}</h1>
+            <p>{getTranslation('readAuthenticExperiences', language)}</p>
           </div>
         </header>
 
@@ -209,7 +227,7 @@ function Reviews() {
               {/* Average Rating Card */}
               <div className="stat-card">
                 <div className="stat-number">{averageRating}</div>
-                <div className="stat-label">Average Rating</div>
+                <div className="stat-label">{getTranslation('avgRating', language)}</div>
                 {/* Render star icons - filled for rating, empty for remaining */}
                 <div className="stat-stars">
                   {[...Array(5)].map((_, i) => (
@@ -225,13 +243,13 @@ function Reviews() {
               {/* Total Reviews Count Card */}
               <div className="stat-card">
                 <div className="stat-number">{totalReviews}</div>
-                <div className="stat-label">Total Reviews</div>
+                <div className="stat-label">{getTranslation('reviews', language)}</div>
               </div>
               
               {/* Helpful Rating Card */}
               <div className="stat-card">
                 <div className="stat-number">98%</div>
-                <div className="stat-label">Helpful Votes</div>
+                <div className="stat-label">{getTranslation('helpful', language)}</div>
               </div>
             </div>
           </div>
@@ -243,7 +261,7 @@ function Reviews() {
             <div className="controls">
               {/* Destination Selector */}
               <div className="control-group">
-                <label>Select Destination:</label>
+                <label>{getTranslation('selectDestination', language)}</label>
                 <select 
                   value={selectedDestination?.id || ''} 
                   onChange={(e) => {
@@ -260,27 +278,27 @@ function Reviews() {
 
               {/* Sort Order Selector */}
               <div className="control-group">
-                <label>Sort by:</label>
+                <label>{getTranslation('sortBy', language)}</label>
                 <select 
                   value={sortBy} 
                   onChange={(e) => setSortBy(e.target.value)}
                 >
-                  <option value="recent">Most Recent</option>
-                  <option value="rating">Highest Rated</option>
+                  {sortOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
                 </select>
               </div>
 
               {/* Rating Filter Selector */}
               <div className="control-group">
-                <label>Filter by rating:</label>
+                <label>{getTranslation('filterBy', language)}</label>
                 <select 
                   value={filterRating} 
                   onChange={(e) => setFilterRating(e.target.value)}
                 >
-                  <option value="all">All Ratings</option>
-                  <option value="5">5 Stars</option>
-                  <option value="4">4+ Stars</option>
-                  <option value="3">3+ Stars</option>
+                  {filterOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -295,7 +313,7 @@ function Reviews() {
               {loading ? (
                 <div className="loading-state">
                   <MessageCircle size={48} />
-                  <p>Loading reviews...</p>
+                  <p>{getTranslation('loading', language)}</p>
                 </div>
               ) : filteredReviews.length > 0 ? (
                 // Review Cards - Render each review with rating, content, and user info
@@ -334,7 +352,7 @@ function Reviews() {
                     {/* Review Actions - Helpful button and other interactions */}
                     <div className="review-actions">
                       <button className="action-btn">
-                        <ThumbsUp size={16} /> Helpful
+                        <ThumbsUp size={16} /> {getTranslation('helpful', language)}
                       </button>
                     </div>
                   </div>
@@ -343,7 +361,7 @@ function Reviews() {
                 // Empty State - No reviews match current filters
                 <div className="empty-state">
                   <MessageCircle size={48} />
-                  <p>No reviews found. Try adjusting your filters!</p>
+                  <p>{getTranslation('noReviews', language)}</p>
                 </div>
               )}
             </div>
@@ -352,7 +370,7 @@ function Reviews() {
             {filteredReviews.length === 0 && (
               <div className="empty-state">
                 <MessageCircle size={48} />
-                <p>No reviews found. Try adjusting your filters!</p>
+                <p>{getTranslation('noReviews', language)}</p>
               </div>
             )}
           </div>
@@ -362,9 +380,9 @@ function Reviews() {
         <section className="write-review-cta">
           <div className="container">
             <div className="cta-content">
-              <h2>Share Your Experience</h2>
-              <p>Help other travelers make the best decisions by sharing your honest review</p>
-              <button className="cta-button">Write a Review</button>
+              <h2>{getTranslation('shareExperience', language)}</h2>
+              <p>{getTranslation('ctaShareReview', language)}</p>
+              <button className="cta-button">{getTranslation('writeReview', language)}</button>
             </div>
           </div>
         </section>
