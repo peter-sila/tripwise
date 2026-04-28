@@ -69,6 +69,10 @@ switch ($method) {
             // Handle user logout
             // See includes/auth.php for implementation
             logout();
+        } elseif ($action === 'updateProfile') {
+            // Handle profile update
+            // See includes/auth.php for implementation
+            updateProfile();
         } else {
             // Invalid action specified
             sendResponse(['error' => 'Invalid action'], 400);

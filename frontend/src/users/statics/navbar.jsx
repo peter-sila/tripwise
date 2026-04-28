@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { Menu, X, Search, User, Globe, LogIn, LogOut } from 'lucide-react';
+import { Menu, X, Search, User, Globe, LogIn, LogOut, Loader, MapPin, Tag } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { useLanguage } from '../../context/LanguageContext';
 import { getTranslation } from '../../utils/translations';
+import ProfileModal from './ProfileModal';
 import '../css/navbar.css';
 
 const API_BASE = 'http://localhost:8000/api';
@@ -17,8 +18,15 @@ const NavBar = () => {
   const [authData, setAuthData] = useState({ email: '', password: '', name: '' });
   const [showUserMenu, setShowUserMenu] = useState(false); // For user profile dropdown
   const [showLanguageMenu, setShowLanguageMenu] = useState(false); // For language selector
+  const [showProfileModal, setShowProfileModal] = useState(false); // For profile modal
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
   const languageMenuRef = useRef(null);
   const userMenuRef = useRef(null);
+  const searchInputRef = useRef(null);
+  const searchTimeoutRef = useRef(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -35,6 +43,10 @@ const NavBar = () => {
       }
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setShowUserMenu(false);
+      }
+      if (searchInputRef.current && !searchInputRef.current.contains(event.target)) {
+        // Don't close if clicking very close to the input
+        setTimeout(() => setShowSearchResults(false), 100);
       }
     };
 
@@ -60,6 +72,70 @@ const NavBar = () => {
     }
   };
 
+  const handleSearch = async (query) => {
+    setSearchQuery(query);
+
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (query.trim().length === 0) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    setIsSearching(true);
+    setShowSearchResults(true);
+
+    // Debounce the search request by 300ms
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const response = await fetch(`${API_BASE}/destinations.php?search=${encodeURIComponent(query)}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        const data = await response.json();
+        
+        if (data.destinations) {
+          // Limit results to 8 for dropdown
+          setSearchResults(data.destinations.slice(0, 8));
+        } else {
+          setSearchResults([]);
+        }
+      } catch (error) {
+        console.error('Search error:', error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+  };
+
+  const handleSearchResultClick = (destination) => {
+    // Navigate to destination or show details
+    window.location.href = `/?destination=${destination.id}`;
+    setIsSearchOpen(false);
+    setSearchQuery('');
+    setSearchResults([]);
+  };
+
+  const handleSearchSubmit = (e) => {
+    if (e) {
+      e.preventDefault();
+    }
+    if (searchQuery.trim()) {
+      // Navigate to discover page with search query
+      window.location.href = `/discover?search=${encodeURIComponent(searchQuery)}`;
+      setIsSearchOpen(false);
+      setSearchQuery('');
+      setSearchResults([]);
+    }
+  };
+
   const handleAuth = async (e) => {
     e.preventDefault();
     const endpoint = authMode === 'login' ? 'auth.php' : 'auth.php';
@@ -80,10 +156,19 @@ const NavBar = () => {
       // Handle successful response with token
       if (data.token) {
         localStorage.setItem('token', data.token);
+        localStorage.setItem('userInfo', JSON.stringify(data.user));
         setUser(data.user);
         setShowAuth(false);
         setAuthData({ email: '', password: '', name: '' });
         alert(getTranslation('loginSuccess', language));
+        
+        // Redirect to admin dashboard if user is admin
+        if (data.user && (data.user.role === 'admin' || data.user.role === 'super_admin')) {
+          localStorage.setItem('adminInfo', JSON.stringify(data.user));
+          setTimeout(() => {
+            window.location.href = '/admin/dashboard';
+          }, 500);
+        }
       } 
       // Handle error response
       else if (data.error) {
@@ -107,6 +192,8 @@ const NavBar = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('userInfo');
+    localStorage.removeItem('adminInfo');
     setUser(null);
   };
 
@@ -126,10 +213,19 @@ const NavBar = () => {
       
       if (data.success && data.token) {
         localStorage.setItem('token', data.token);
+        localStorage.setItem('userInfo', JSON.stringify(data.user));
         setUser(data.user);
         setShowAuth(false);
         setAuthData({ email: '', password: '', name: '' });
         alert(getTranslation('loginSuccess', language));
+        
+        // Redirect to admin dashboard if user is admin
+        if (data.user && (data.user.role === 'admin' || data.user.role === 'super_admin')) {
+          localStorage.setItem('adminInfo', JSON.stringify(data.user));
+          setTimeout(() => {
+            window.location.href = '/admin/dashboard';
+          }, 500);
+        }
       } else if (data.error) {
         alert(`Error: ${data.error}`);
       }
@@ -145,7 +241,12 @@ const NavBar = () => {
   };
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
-  const toggleSearch = () => setIsSearchOpen(!isSearchOpen);
+  const toggleSearch = () => {
+    setIsSearchOpen(!isSearchOpen);
+    setSearchQuery('');
+    setSearchResults([]);
+    setShowSearchResults(false);
+  };
 
   const languages = [
     { code: 'en', name: 'English', flag: '🇬🇧' },
@@ -245,10 +346,16 @@ const NavBar = () => {
               {/* User Dropdown Menu */}
               {showUserMenu && (
                 <div className="user-dropdown-menu">
-                  <a href="/profile" className="dropdown-item profile-link">
+                  <button 
+                    className="dropdown-item profile-link"
+                    onClick={() => {
+                      setShowProfileModal(true);
+                      setShowUserMenu(false);
+                    }}
+                  >
                     <User size={16} />
                     {getTranslation('profile', language)}
-                  </a>
+                  </button>
                   <button 
                     className="dropdown-item logout-btn"
                     onClick={() => {
@@ -343,12 +450,100 @@ const NavBar = () => {
       {isSearchOpen && (
         <div className="navbar-search">
           <div className="navbar-container">
-            <input 
-              type="text" 
-              className="search-input" 
-              placeholder={getTranslation('searchPlaceholder', language)}
-              autoFocus
-            />
+            <form onSubmit={handleSearchSubmit} className="search-form-container">
+              <div className="search-input-wrapper" ref={searchInputRef}>
+                <Search size={18} className="search-icon-input" />
+                <input 
+                  ref={searchInputRef}
+                  type="text" 
+                  className="search-input" 
+                  placeholder={getTranslation('searchPlaceholder', language)}
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSearchSubmit(e);
+                    }
+                  }}
+                  autoFocus
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    className="search-clear-btn"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSearchResults([]);
+                      setShowSearchResults(false);
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
+
+                {/* Search Results Dropdown */}
+                {showSearchResults && (
+                  <div className="search-results-dropdown">
+                    {isSearching && (
+                      <div className="search-loading">
+                        <Loader size={18} className="spinner" />
+                        <span>{getTranslation('loading', language)}</span>
+                      </div>
+                    )}
+                    
+                    {!isSearching && searchResults.length > 0 && (
+                      <>
+                        <div className="search-results-list">
+                          {searchResults.map((destination) => (
+                            <button
+                              key={destination.id}
+                              className="search-result-item"
+                              onClick={() => handleSearchResultClick(destination)}
+                            >
+                              <div className="result-icon">
+                                {destination.image_url ? (
+                                  <img 
+                                    src={destination.image_url} 
+                                    alt={destination.name}
+                                    className="result-image"
+                                  />
+                                ) : (
+                                  <MapPin size={16} />
+                                )}
+                              </div>
+                              <div className="result-content">
+                                <div className="result-name">{destination.name}</div>
+                                <div className="result-location">{destination.location}</div>
+                              </div>
+                              {destination.category && (
+                                <div className="result-category">
+                                  <Tag size={12} />
+                                  {destination.category}
+                                </div>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                        {searchResults.length > 0 && (
+                          <button
+                            className="search-results-footer"
+                            onClick={() => handleSearchSubmit()}
+                          >
+                            {getTranslation('seeAll', language) || 'See all results'}
+                          </button>
+                        )}
+                      </>
+                    )}
+                    
+                    {!isSearching && searchQuery.trim().length > 0 && searchResults.length === 0 && (
+                      <div className="search-no-results">
+                        <span>{getTranslation('noResults', language)}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -368,6 +563,14 @@ const NavBar = () => {
           ))}
         </div>
       )}
+
+      {/* Profile Modal */}
+      <ProfileModal 
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        user={user}
+        onLogout={handleLogout}
+      />
     </nav>
   );
 };

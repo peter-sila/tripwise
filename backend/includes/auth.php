@@ -114,13 +114,17 @@ function authenticateUser($email, $password) {
     $pdo = getDBConnection();
     
     // Query database for user with this email
-    $stmt = $pdo->prepare("SELECT id, email, password_hash, name FROM users WHERE email = ?");
+    $stmt = $pdo->prepare("SELECT id, email, password_hash, name, role, permissions FROM users WHERE email = ?");
     $stmt->execute([$email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     // Verify password matches hash and return user data (without password)
     if ($user && password_verify($password, $user['password_hash'])) {
         unset($user['password_hash']); // Remove password hash for security
+        // Parse permissions JSON if exists
+        if ($user['permissions']) {
+            $user['permissions'] = json_decode($user['permissions'], true);
+        }
         return $user;
     }
     return false;
@@ -274,6 +278,85 @@ function register() {
 
     // Return success response with new user ID
     sendResponse(['message' => 'Registration successful', 'user_id' => $userId], 201);
+}
+
+/**
+ * Update User Profile
+ * 
+ * Allows user to update their profile information:
+ * - Name: Can be changed anytime
+ * - Password: Can be changed with current password verification
+ * 
+ * @return void (Exits with JSON response)
+ */
+function updateProfile() {
+    // Verify user is authenticated
+    $user = requireAuth();
+    
+    // Parse JSON request body
+    $data = getJsonInput();
+
+    // Get database connection
+    $pdo = getDBConnection();
+
+    // Track what's being updated
+    $updates = [];
+    $params = [];
+
+    // Update name if provided
+    if (isset($data['name']) && !empty($data['name'])) {
+        $name = sanitizeInput($data['name']);
+        $updates[] = "name = ?";
+        $params[] = $name;
+    }
+
+    // Update password if provided
+    if (isset($data['newPassword']) && !empty($data['newPassword'])) {
+        // Verify current password is provided
+        if (!isset($data['currentPassword']) || empty($data['currentPassword'])) {
+            sendResponse(['error' => 'Current password required to change password'], 400);
+        }
+
+        // Verify current password matches
+        $stmt = $pdo->prepare("SELECT password_hash FROM users WHERE id = ?");
+        $stmt->execute([$user['id']]);
+        $userRecord = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$userRecord || !password_verify($data['currentPassword'], $userRecord['password_hash'])) {
+            sendResponse(['error' => 'Current password is incorrect'], 401);
+        }
+
+        // Validate new password length
+        if (strlen($data['newPassword']) < 6) {
+            sendResponse(['error' => 'New password must be at least 6 characters'], 400);
+        }
+
+        // Hash new password
+        $passwordHash = password_hash($data['newPassword'], PASSWORD_DEFAULT);
+        $updates[] = "password_hash = ?";
+        $params[] = $passwordHash;
+    }
+
+    // Check if there's anything to update
+    if (empty($updates)) {
+        sendResponse(['error' => 'No fields to update'], 400);
+    }
+
+    // Add user ID to params
+    $params[] = $user['id'];
+
+    // Build and execute update query
+    $updateQuery = "UPDATE users SET " . implode(", ", $updates) . " WHERE id = ?";
+    $stmt = $pdo->prepare($updateQuery);
+    $stmt->execute($params);
+
+    // Fetch updated user data
+    $stmt = $pdo->prepare("SELECT id, email, name, role FROM users WHERE id = ?");
+    $stmt->execute([$user['id']]);
+    $updatedUser = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // Return success response with updated user data
+    sendResponse(['message' => 'Profile updated successfully', 'success' => true, 'user' => $updatedUser]);
 }
 
 /**

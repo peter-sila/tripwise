@@ -83,6 +83,20 @@ function Discover() {
   const [viewMode, setViewMode] = useState('grid');             // View mode: 'grid' or 'map'
 
   /**
+   * Effect Hook: Initialize search from URL parameters
+   * 
+   * On component mount, check if there's a search parameter in the URL
+   * and set the search term accordingly
+   */
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlSearch = params.get('search');
+    if (urlSearch) {
+      setSearchTerm(decodeURIComponent(urlSearch));
+    }
+  }, []);
+
+  /**
    * Effect Hook: Fetch discoveries when search or category changes
    * 
    * Re-fetches results whenever:

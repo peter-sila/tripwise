@@ -1,0 +1,226 @@
+/* ====== Admin Sidebar Styles ====== */
+
+:root {
+  --primary-color: #0f68cb;
+  --primary-light: #2680d5;
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --border-color: #e5e7eb;
+  --bg-white: #ffffff;
+  --bg-light: #f9fafb;
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.admin-sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 40;
+  top: 64px;
+}
+
+.admin-sidebar {
+  position: fixed;
+  left: 0;
+  top: 64px;
+  height: calc(100vh - 64px);
+  width: 280px;
+  background: var(--bg-white);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  z-index: 50;
+  overflow-y: auto;
+}
+
+.admin-sidebar.closed {
+  transform: translateX(-100%);
+}
+
+.admin-sidebar-content {
+  flex: 1;
+  padding: 16px 0;
+}
+
+.admin-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 8px;
+}
+
+.admin-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  position: relative;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-sidebar-item:hover {
+  background: var(--bg-light);
+  color: var(--primary-color);
+}
+
+.admin-sidebar-item.active {
+  background: linear-gradient(90deg, rgba(15, 104, 203, 0.1), transparent);
+  color: var(--primary-color);
+  border-left: 3px solid var(--primary-color);
+  padding-left: 13px;
+}
+
+.admin-sidebar-item svg {
+  flex-shrink: 0;
+  size: 20px;
+}
+
+.admin-sidebar-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-sidebar-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.admin-sidebar-badge.new {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* ====== Sidebar Footer ====== */
+.admin-sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-light);
+}
+
+.admin-sidebar-version {
+  text-align: center;
+}
+
+.admin-sidebar-version p {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.admin-sidebar-version small {
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: block;
+  margin-top: 4px;
+}
+
+/* ====== Scrollbar Styling ====== */
+.admin-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.admin-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.admin-sidebar::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.admin-sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* ====== Responsive Design ====== */
+@media (max-width: 768px) {
+  .admin-sidebar {
+    width: 240px;
+    box-shadow: var(--shadow-md);
+  }
+
+  .admin-sidebar.closed {
+    transform: translateX(-100%);
+  }
+
+  .admin-sidebar-content {
+    padding: 12px 0;
+  }
+
+  .admin-sidebar-item {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  .admin-sidebar-item.active {
+    padding-left: 11px;
+  }
+
+  .admin-sidebar-label {
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-sidebar {
+    width: 220px;
+  }
+
+  .admin-sidebar-item {
+    padding: 10px 12px;
+    font-size: 12px;
+    gap: 10px;
+  }
+
+  .admin-sidebar-item svg {
+    min-width: 18px;
+    min-height: 18px;
+  }
+
+  .admin-sidebar-badge {
+    padding: 2px 6px;
+    font-size: 9px;
+  }
+
+  .admin-sidebar-footer {
+    padding: 12px;
+  }
+
+  .admin-sidebar-version small {
+    font-size: 10px;
+  }
+}
+
+/* ====== Desktop Layout - Sidebar Always Visible ====== */
+@media (min-width: 769px) {
+  .admin-sidebar-overlay {
+    display: none;
+  }
+
+  .admin-sidebar {
+    transform: translateX(0) !important;
+  }
+}

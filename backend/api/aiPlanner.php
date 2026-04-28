@@ -182,6 +182,123 @@ switch ($method) {
         sendResponse(['message' => 'Trip plan created successfully', 'plan_id' => $planId], 201);
         break;
 
+    case 'PUT':
+        /**
+         * PUT - Update Existing Trip Plan
+         * 
+         * Requires: Authentication token in Authorization header, plan ID in query parameter
+         * Query Parameter: ?id=<plan_id>
+         * 
+         * Request Body (JSON):
+         *   - title (required): Updated trip plan name
+         *   - description (optional): Updated description
+         *   - start_date (optional): Updated start date (YYYY-MM-DD)
+         *   - end_date (optional): Updated end date (YYYY-MM-DD)
+         *   - items (optional): Array of itinerary items (replaces existing items)
+         * 
+         * Returns: { message: "Trip plan updated successfully", plan_id: <id> }
+         */
+        
+        // Verify user is authenticated
+        $user = requireAuth();
+        
+        // Get plan ID from query parameter
+        $planId = $_GET['id'] ?? null;
+        if (!$planId) {
+            sendResponse(['error' => 'Plan ID is required'], 400);
+        }
+
+        // Verify plan belongs to authenticated user
+        $stmt = $pdo->prepare("SELECT user_id FROM trip_plans WHERE id = ?");
+        $stmt->execute([$planId]);
+        $plan = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$plan || $plan['user_id'] != $user['id']) {
+            sendResponse(['error' => 'Plan not found or unauthorized'], 404);
+        }
+
+        // Parse incoming JSON data
+        $data = getJsonInput();
+
+        // Validate required fields
+        $required = ['title'];
+        $missing = validateRequired($data, $required);
+
+        if (!empty($missing)) {
+            sendResponse(['error' => 'Missing required fields: ' . implode(', ', $missing)], 400);
+        }
+
+        // Extract and sanitize trip plan data
+        $title = sanitizeInput($data['title']);
+        $description = $data['description'] ?? '';
+        $start_date = $data['start_date'] ?? null;
+        $end_date = $data['end_date'] ?? null;
+
+        // Update trip plan in database
+        $stmt = $pdo->prepare(
+            "UPDATE trip_plans SET title = ?, description = ?, start_date = ?, end_date = ? WHERE id = ?"
+        );
+        $stmt->execute([$title, $description, $start_date, $end_date, $planId]);
+
+        // Delete existing items if new items are provided
+        if (isset($data['items']) && is_array($data['items'])) {
+            $stmt = $pdo->prepare("DELETE FROM trip_plan_items WHERE trip_plan_id = ?");
+            $stmt->execute([$planId]);
+
+            // Add new itinerary items
+            foreach ($data['items'] as $item) {
+                $itemTitle = sanitizeInput($item['title'] ?? '');
+                $itemDescription = $item['description'] ?? '';
+                $destination_id = $item['destination_id'] ?? null;
+                $date = $item['date'] ?? null;
+                $time = $item['time'] ?? null;
+
+                $stmt = $pdo->prepare(
+                    "INSERT INTO trip_plan_items (trip_plan_id, destination_id, title, description, date, time) 
+                     VALUES (?, ?, ?, ?, ?, ?)"
+                );
+                $stmt->execute([$planId, $destination_id, $itemTitle, $itemDescription, $date, $time]);
+            }
+        }
+
+        sendResponse(['message' => 'Trip plan updated successfully', 'plan_id' => $planId], 200);
+        break;
+
+    case 'DELETE':
+        /**
+         * DELETE - Delete a Trip Plan
+         * 
+         * Requires: Authentication token in Authorization header, plan ID in query parameter
+         * Query Parameter: ?id=<plan_id>
+         * 
+         * Returns: { message: "Trip plan deleted successfully", plan_id: <id> }
+         */
+        
+        // Verify user is authenticated
+        $user = requireAuth();
+        
+        // Get plan ID from query parameter
+        $planId = $_GET['id'] ?? null;
+        if (!$planId) {
+            sendResponse(['error' => 'Plan ID is required'], 400);
+        }
+
+        // Verify plan belongs to authenticated user
+        $stmt = $pdo->prepare("SELECT user_id FROM trip_plans WHERE id = ?");
+        $stmt->execute([$planId]);
+        $plan = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$plan || $plan['user_id'] != $user['id']) {
+            sendResponse(['error' => 'Plan not found or unauthorized'], 404);
+        }
+
+        // Delete trip plan (items will be deleted automatically due to CASCADE in foreign key)
+        $stmt = $pdo->prepare("DELETE FROM trip_plans WHERE id = ?");
+        $stmt->execute([$planId]);
+
+        sendResponse(['message' => 'Trip plan deleted successfully', 'plan_id' => $planId], 200);
+        break;
+
     default:
         // Handle unsupported HTTP methods
         sendResponse(['error' => 'Method not allowed'], 405);

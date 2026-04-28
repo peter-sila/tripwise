@@ -6,6 +6,9 @@ import Discover from './users/discover.jsx';
 import AIPlanner from './users/AIPlanner.jsx';
 import TravelTips from './users/travelTips.jsx';
 import Reviews from './users/reviews.jsx';
+import UserProfile from './users/UserProfile.jsx';
+import AdminLogin from './admin/AdminLogin.jsx';
+import AdminDashboard from './admin/AdminDashboard.jsx';
 
 // Replace with your Google OAuth Client ID (from Vite environment variables)
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID_HERE';
@@ -16,11 +19,17 @@ function App() {
       <LanguageProvider>
         <Router>
           <Routes>
+            {/* User Routes */}
             <Route path="/" element={<Destinations />} />
             <Route path="/discover" element={<Discover />} />
             <Route path="/ai-planner" element={<AIPlanner />} />
             <Route path="/travel-tips" element={<TravelTips />} />
             <Route path="/reviews" element={<Reviews />} />
+            <Route path="/profile" element={<UserProfile />} />
+            
+            {/* Admin Routes */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
           </Routes>
         </Router>
       </LanguageProvider>
