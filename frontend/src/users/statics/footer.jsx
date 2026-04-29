@@ -1,4 +1,5 @@
 import { Mail, Phone, MapPin, Share2, Heart } from 'lucide-react';
+import { Facebook, Twitter, Instagram, Linkedin } from 'react-bootstrap-icons';
 import '../css/footer.css';
 
 const Footer = () => {
@@ -32,10 +33,10 @@ const Footer = () => {
   };
 
   const socialLinks = [
-    { emoji: '👍', href: '#', label: 'Facebook' },
-    { emoji: '𝕏', href: '#', label: 'Twitter' },
-    { emoji: '📷', href: '#', label: 'Instagram' },
-    { emoji: '💼', href: '#', label: 'LinkedIn' },
+    { icon: Facebook, href: '#', label: 'Facebook' },
+    { icon: Twitter, href: '#', label: 'Twitter' },
+    { icon: Instagram, href: '#', label: 'Instagram' },
+    { icon: Linkedin, href: '#', label: 'LinkedIn' },
   ];
 
   return (
@@ -70,28 +71,33 @@ const Footer = () => {
               
               {/* Social Links */}
               <div className="social-links">
-                {socialLinks.map((social) => (
-                  <a 
-                    key={social.label}
-                    href={social.href}
-                    className="social-link"
-                    aria-label={social.label}
-                    title={social.label}
-                  >
-                    <span className="social-emoji">{social.emoji}</span>
-                  </a>
-                ))}
+                {socialLinks.map((social) => {
+                  const IconComponent = social.icon;
+                  return (
+                    <a 
+                      key={social.label}
+                      href={social.href}
+                      className="social-link"
+                      aria-label={social.label}
+                      title={social.label}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <IconComponent size={20} className="social-icon" />
+                    </a>
+                  );
+                })}
               </div>
 
               {/* Contact Info */}
               <div className="contact-info">
                 <div className="contact-item">
                   <Phone size={18} />
-                  <span>+254 (0) 123 456 789</span>
+                  <span>+254 794 178 635</span>
                 </div>
                 <div className="contact-item">
                   <Mail size={18} />
-                  <span>support@tripwise.com</span>
+                  <span>wise.wiser254@gmail.com</span>
                 </div>
                 <div className="contact-item">
                   <MapPin size={18} />

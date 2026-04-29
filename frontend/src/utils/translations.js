@@ -120,6 +120,22 @@ export const translations = {
     noReviews: 'No reviews yet for this destination',
     helpful: 'Helpful',
     
+    // Review Form
+    rating: 'Rating',
+    stars: 'Stars',
+    comment: 'Comment',
+    commentPlaceholder: 'Share your experience... (minimum 10 characters)',
+    ratingRequired: 'Please select a rating',
+    commentRequired: 'Please write a comment',
+    commentMinLength: 'Comment must be at least 10 characters',
+    reviewingDestination: 'Reviewing',
+    reviewSubmitted: 'Thank you! Your review has been submitted successfully.',
+    reviewError: 'Failed to submit review. Please try again.',
+    networkError: 'Network error. Please check your connection and try again.',
+    loginRequired: 'Please log in to submit a review.',
+    submit: 'Submit Review',
+    submitting: 'Submitting...',
+    
     // Auth
     login: 'Login',
     register: 'Register',
@@ -277,6 +293,22 @@ export const translations = {
     threePlus: '3+ Estrellas',
     noReviews: 'Sin reseñas aún para este destino',
     helpful: 'Útil',
+    
+    // Review Form
+    rating: 'Calificación',
+    stars: 'Estrellas',
+    comment: 'Comentario',
+    commentPlaceholder: 'Comparte tu experiencia... (mínimo 10 caracteres)',
+    ratingRequired: 'Por favor selecciona una calificación',
+    commentRequired: 'Por favor escribe un comentario',
+    commentMinLength: 'El comentario debe tener al menos 10 caracteres',
+    reviewingDestination: 'Reseñando',
+    reviewSubmitted: '¡Gracias! Tu reseña ha sido enviada exitosamente.',
+    reviewError: 'Fallo al enviar la reseña. Por favor intenta de nuevo.',
+    networkError: 'Error de red. Por favor verifica tu conexión e intenta de nuevo.',
+    loginRequired: 'Por favor inicia sesión para enviar una reseña.',
+    submit: 'Enviar Reseña',
+    submitting: 'Enviando...',
     
     // Auth
     login: 'Iniciar Sesión',

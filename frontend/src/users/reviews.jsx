@@ -21,7 +21,7 @@
 
 import Navbar from "./statics/navbar.jsx";
 import Footer from "./statics/footer.jsx";
-import { Star, ThumbsUp, MessageCircle, User, Calendar, MapPin, Filter } from 'lucide-react';
+import { Star, ThumbsUp, MessageCircle, User, Calendar, MapPin, Filter, X, AlertCircle, CheckCircle } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { getTranslation } from '../utils/translations';
@@ -57,6 +57,20 @@ function Reviews() {
   const [loading, setLoading] = useState(true);       // Loading state for data fetching
   const [sortBy, setSortBy] = useState('recent');     // Sort order for reviews
   const [filterRating, setFilterRating] = useState('all'); // Rating filter threshold
+  
+  // State for review form
+  const [showReviewForm, setShowReviewForm] = useState(false);  // Form visibility toggle
+  const [formData, setFormData] = useState({ rating: 5, comment: '' }); // Form input data
+  const [submitting, setSubmitting] = useState(false);  // Submission loading state
+  const [submitMessage, setSubmitMessage] = useState(null); // Success/error message
+  const [formErrors, setFormErrors] = useState({}); // Form validation errors
+  
+  // State for authentication
+  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token')); // User auth status
+  const [showLoginForm, setShowLoginForm] = useState(false);  // Show login form modal
+  const [loginData, setLoginData] = useState({ email: '', password: '' }); // Login form data
+  const [loginError, setLoginError] = useState('');  // Login error message
+  const [loginLoading, setLoginLoading] = useState(false);  // Login submission state
 
   // Sort options with translations
   const sortOptions = [
@@ -149,6 +163,182 @@ function Reviews() {
       // Mark loading as complete
       setLoading(false);
     }
+  };
+
+  /**
+   * Validate Review Form
+   * Validates all form fields before submission.
+   */
+  const validateForm = (data) => {
+    const errors = {};
+    if (!data.rating || data.rating < 1 || data.rating > 5) {
+      errors.rating = getTranslation('ratingRequired', language);
+    }
+    if (!data.comment || data.comment.trim().length === 0) {
+      errors.comment = getTranslation('commentRequired', language);
+    }
+    if (data.comment && data.comment.trim().length < 10) {
+      errors.comment = getTranslation('commentMinLength', language);
+    }
+    return errors;
+  };
+
+  /**
+   * Handle Review Form Input Change
+   */
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: name === 'rating' ? parseInt(value) : value }));
+    if (formErrors[name]) {
+      setFormErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  /**
+   * Submit Review to Backend
+   */
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    
+    const errors = validateForm(formData);
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    
+    if (!selectedDestination) {
+      setSubmitMessage({ type: 'error', text: getTranslation('selectDestination', language) });
+      return;
+    }
+    
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setSubmitMessage({ type: 'error', text: getTranslation('loginRequired', language) });
+      return;
+    }
+    
+    setSubmitting(true);
+    try {
+      const response = await fetch(`${API_BASE}/reviews.php`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          destination_id: selectedDestination.id,
+          rating: formData.rating,
+          comment: formData.comment
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setSubmitMessage({ type: 'success', text: getTranslation('reviewSubmitted', language) });
+        setFormData({ rating: 5, comment: '' });
+        setFormErrors({});
+        setShowReviewForm(false);
+        
+        setTimeout(() => {
+          fetchReviews(selectedDestination.id);
+          setSubmitMessage(null);
+        }, 2000);
+      } else {
+        setSubmitMessage({ type: 'error', text: data.error || getTranslation('reviewError', language) });
+      }
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      setSubmitMessage({ type: 'error', text: getTranslation('networkError', language) });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  /**
+   * Close Review Form Modal
+   */
+  const closeReviewForm = () => {
+    setShowReviewForm(false);
+    setFormData({ rating: 5, comment: '' });
+    setFormErrors({});
+    setSubmitMessage(null);
+  };
+
+  /**
+   * Open Review Form with Auth Check
+   * If user not authenticated, show login form instead
+   */
+  const openReviewForm = () => {
+    if (!isAuthenticated) {
+      setShowLoginForm(true);
+    } else {
+      setShowReviewForm(true);
+    }
+  };
+
+  /**
+   * Handle Login Form Input Change
+   */
+  const handleLoginChange = (e) => {
+    const { name, value } = e.target;
+    setLoginData(prev => ({ ...prev, [name]: value }));
+    if (loginError) setLoginError('');
+  };
+
+  /**
+   * Handle User Login
+   */
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    
+    if (!loginData.email || !loginData.password) {
+      setLoginError(getTranslation('required', language));
+      return;
+    }
+    
+    setLoginLoading(true);
+    try {
+      const response = await fetch(`${API_BASE}auth.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'login',
+          email: loginData.email,
+          password: loginData.password
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.token) {
+        // Save token and update auth state
+        localStorage.setItem('token', data.token);
+        setIsAuthenticated(true);
+        setLoginData({ email: '', password: '' });
+        setLoginError('');
+        
+        // Close login form and open review form
+        setShowLoginForm(false);
+        setShowReviewForm(true);
+      } else {
+        setLoginError(data.message || getTranslation('loginError', language));
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setLoginError(getTranslation('networkError', language));
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  /**
+   * Close Login Form
+   */
+  const closeLoginForm = () => {
+    setShowLoginForm(false);
+    setLoginData({ email: '', password: '' });
+    setLoginError('');
   };
 
   /**
@@ -382,11 +572,200 @@ function Reviews() {
             <div className="cta-content">
               <h2>{getTranslation('shareExperience', language)}</h2>
               <p>{getTranslation('ctaShareReview', language)}</p>
-              <button className="cta-button">{getTranslation('writeReview', language)}</button>
+              <button 
+                className="cta-button"
+                onClick={openReviewForm}
+              >
+                {getTranslation('writeReview', language)}
+              </button>
             </div>
           </div>
         </section>
       </main>
+
+      {/* REVIEW FORM MODAL */}
+      {showReviewForm && (
+        <div className="review-modal-overlay" onClick={closeReviewForm}>
+          <div className="review-modal" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="modal-header">
+              <h2>{getTranslation('writeReview', language)}</h2>
+              <button className="close-btn" onClick={closeReviewForm}>
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="modal-content">
+              {/* Success/Error Message */}
+              {submitMessage && (
+                <div className={`message-box ${submitMessage.type}`}>
+                  {submitMessage.type === 'success' ? (
+                    <CheckCircle size={20} />
+                  ) : (
+                    <AlertCircle size={20} />
+                  )}
+                  <span>{submitMessage.text}</span>
+                </div>
+              )}
+
+              {/* Destination Display */}
+              {selectedDestination && (
+                <div className="selected-destination">
+                  <p className="dest-label">{getTranslation('reviewingDestination', language)}</p>
+                  <p className="dest-name">{selectedDestination.name}</p>
+                </div>
+              )}
+
+              {/* Review Form */}
+              <form onSubmit={handleSubmitReview} className="review-form">
+                {/* Rating Input */}
+                <div className="form-group">
+                  <label>{getTranslation('rating', language)} *</label>
+                  <div className="rating-input">
+                    {[1, 2, 3, 4, 5].map(star => (
+                      <button
+                        key={star}
+                        type="button"
+                        className={`star-btn ${formData.rating >= star ? 'active' : ''}`}
+                        onClick={() => setFormData(prev => ({ ...prev, rating: star }))}
+                        title={`${star} ${getTranslation('stars', language)}`}
+                      >
+                        <Star 
+                          size={32} 
+                          fill={formData.rating >= star ? '#f59e0b' : '#e5e7eb'} 
+                          color={formData.rating >= star ? '#f59e0b' : '#e5e7eb'}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  {formErrors.rating && <span className="error-text">{formErrors.rating}</span>}
+                </div>
+
+                {/* Comment Input */}
+                <div className="form-group">
+                  <label>
+                    {getTranslation('comment', language)} *
+                    <span className="char-count">{formData.comment.length}/500</span>
+                  </label>
+                  <textarea
+                    name="comment"
+                    value={formData.comment}
+                    onChange={handleFormChange}
+                    placeholder={getTranslation('commentPlaceholder', language)}
+                    maxLength={500}
+                    rows={5}
+                    className="comment-input"
+                  />
+                  {formErrors.comment && <span className="error-text">{formErrors.comment}</span>}
+                </div>
+
+                {/* Form Actions */}
+                <div className="form-actions">
+                  <button 
+                    type="button" 
+                    className="btn-cancel"
+                    onClick={closeReviewForm}
+                    disabled={submitting}
+                  >
+                    {getTranslation('cancel', language)}
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="btn-submit"
+                    disabled={submitting}
+                  >
+                    {submitting ? getTranslation('submitting', language) : getTranslation('submit', language)}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* LOGIN FORM MODAL */}
+      {showLoginForm && (
+        <div className="login-modal-overlay" onClick={closeLoginForm}>
+          <div className="login-modal" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="modal-header">
+              <h2>{getTranslation('login', language)}</h2>
+              <button className="close-btn" onClick={closeLoginForm}>
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="modal-content">
+              <p className="login-subtitle">{getTranslation('loginRequired', language)}</p>
+
+              {/* Error Message */}
+              {loginError && (
+                <div className="message-box error">
+                  <AlertCircle size={20} />
+                  <span>{loginError}</span>
+                </div>
+              )}
+
+              {/* Login Form */}
+              <form onSubmit={handleLogin} className="login-form">
+                {/* Email Input */}
+                <div className="form-group">
+                  <label>{getTranslation('email', language)} *</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={loginData.email}
+                    onChange={handleLoginChange}
+                    placeholder="you@example.com"
+                    className="login-input"
+                    disabled={loginLoading}
+                  />
+                </div>
+
+                {/* Password Input */}
+                <div className="form-group">
+                  <label>{getTranslation('password', language)} *</label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={loginData.password}
+                    onChange={handleLoginChange}
+                    placeholder="••••••••"
+                    className="login-input"
+                    disabled={loginLoading}
+                  />
+                </div>
+
+                {/* Form Actions */}
+                <div className="form-actions">
+                  <button 
+                    type="button" 
+                    className="btn-cancel"
+                    onClick={closeLoginForm}
+                    disabled={loginLoading}
+                  >
+                    {getTranslation('cancel', language)}
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="btn-submit"
+                    disabled={loginLoading}
+                  >
+                    {loginLoading ? getTranslation('sending', language) : getTranslation('login', language)}
+                  </button>
+                </div>
+
+                {/* Signup Link */}
+                <p className="signup-link">
+                  {getTranslation('needAccount', language)}
+                </p>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </>
