@@ -105,14 +105,13 @@ export default function UserProfile() {
       }
 
       // Make API call to update profile
-      const response = await fetch(`${API_BASE}/auth.php`, {
-        method: 'POST',
+      const response = await fetch(`${API_BASE}/auth/profile`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          action: 'updateProfile',
-          token,
           name: formData.name,
           currentPassword: formData.currentPassword || undefined,
           newPassword: formData.newPassword || undefined,
@@ -121,7 +120,7 @@ export default function UserProfile() {
 
       const data = await response.json();
 
-      if (data.success) {
+      if (response.ok) {
         // Update local storage
         const updatedUser = {
           ...user,
@@ -139,7 +138,7 @@ export default function UserProfile() {
         }));
         setEditMode(false);
       } else {
-        setError(data.message || 'Failed to update profile');
+        setError(data.detail || 'Failed to update profile');
       }
     } catch (err) {
       console.error('Error updating profile:', err);

@@ -148,6 +148,19 @@ export const translations = {
     registerSuccess: 'Registration successful! Please log in now.',
     loginError: 'Failed to authenticate. Please try again.',
     
+    // Destination Details
+    viewDetails: 'View Details',
+    back: 'Back',
+    about: 'About',
+    experienceThis: 'Experience This Destination',
+    shareYourExperience: 'awaits your story! Share your experience and help other travelers discover its magic.',
+    destinationNotFound: 'Destination not found.',
+    errorLoadingDestination: 'Error loading destination details. Please try again.',
+    backToDestinations: 'Back to Destinations',
+    recentReviews: 'Recent Reviews',
+    writeReview: 'Write a Review',
+    required: 'This field is required',
+    
     // Travel Tips Additional
     expertAdvice: 'Expert advice to make your journey unforgettable',
     bestTimeToVisit: 'Best Time to Visit',
@@ -321,6 +334,19 @@ export const translations = {
     loginSuccess: '¡Éxito! Ahora has iniciado sesión.',
     registerSuccess: '¡Registro exitoso! Por favor inicia sesión ahora.',
     loginError: 'Falló la autenticación. Por favor intenta de nuevo.',
+    
+    // Destination Details
+    viewDetails: 'Ver Detalles',
+    back: 'Atrás',
+    about: 'Acerca de',
+    experienceThis: 'Experimenta este Destino',
+    shareYourExperience: 'te espera tu historia! Comparte tu experiencia y ayuda a otros viajeros a descubrir su magia.',
+    destinationNotFound: 'Destino no encontrado.',
+    errorLoadingDestination: 'Error al cargar los detalles del destino. Por favor intenta de nuevo.',
+    backToDestinations: 'Volver a Destinos',
+    recentReviews: 'Reseñas Recientes',
+    writeReview: 'Escribir una Reseña',
+    required: 'Este campo es requerido',
     
     // Travel Tips Additional
     expertAdvice: 'Consejos de expertos para hacer tu viaje memorable',

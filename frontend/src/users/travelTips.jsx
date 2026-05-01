@@ -23,6 +23,7 @@ import Navbar from "./statics/navbar.jsx";
 import Footer from "./statics/footer.jsx";
 import { AlertCircle, Heart, Clock, DollarSign, Shield, Lightbulb, BookOpen, ChevronRight } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { getTranslation } from '../utils/translations';
 import './css/traveltips.css';
@@ -59,6 +60,7 @@ const categories = [
  */
 function TravelTips() {
   const { language } = useLanguage();
+  const navigate = useNavigate();
   
   const categories = [
     { id: '', label: getTranslation('allTips', language), icon: '📚' },
@@ -103,18 +105,13 @@ function TravelTips() {
   const fetchTips = async () => {
     setLoading(true);
     try {
-      // Build API URL based on selected category
-      const url = selectedCategory 
-        ? `${API_BASE}/travelTips.php?category=${selectedCategory}` 
-        : `${API_BASE}/travelTips.php`;
-      
-      // Fetch tips from backend
-      const response = await fetch(url);
-      const data = await response.json();
+      // Travel tips endpoint (placeholder for now)
+      // In a real implementation, this would return travel tips from the backend
+      const tips = [];
       
       // Update state with fetched tips or empty array
-      if (data.travel_tips && data.travel_tips.length > 0) {
-        setTips(data.travel_tips);
+      if (tips && tips.length > 0) {
+        setTips(tips);
       } else {
         setTips([]);
       }
@@ -272,7 +269,12 @@ function TravelTips() {
             <div className="cta-content">
               <h2>{getTranslation('readyForAdventure', language)}</h2>
               <p>{getTranslation('ctaDescription', language)}</p>
-              <button className="cta-button">{getTranslation('startPlanning', language)}</button>
+              <button 
+                className="cta-button"
+                onClick={() => navigate('/ai-planner?showForm=true')}
+              >
+                {getTranslation('startPlanning', language)}
+              </button>
             </div>
           </div>
         </section>

@@ -11,6 +11,7 @@
  * 
  * @param {Array} destinations - Array of destination objects to display
  * @param {Function} onMarkerClick - Callback when marker is clicked
+ * @param {Function} onViewDetails - Callback when "View Details" button is clicked
  * @returns {JSX.Element} Map component
  */
 
@@ -24,7 +25,7 @@ import './css/mapview.css';
  * Simple Map Component using dynamic import to avoid SSR issues
  * Falls back to list view if map library not available
  */
-const MapView = ({ destinations = [], onMarkerClick = null }) => {
+const MapView = ({ destinations = [], onMarkerClick = null, onViewDetails = null }) => {
   const { language } = useLanguage();
   const mapContainer = useRef(null);
   const map = useRef(null);
@@ -116,7 +117,7 @@ const MapView = ({ destinations = [], onMarkerClick = null }) => {
               <h4>${destination.name}</h4>
               <p>${destination.location || 'Kenya'}</p>
               ${destination.image_url ? `<img src="${destination.image_url}" alt="${destination.name}" />` : ''}
-              <button class="popup-btn" data-id="${destination.id}">View Details</button>
+              <button class="popup-btn view-details-popup-btn" data-id="${destination.id}">View Details</button>
             </div>
           `);
 
@@ -125,6 +126,18 @@ const MapView = ({ destinations = [], onMarkerClick = null }) => {
           setSelectedMarker(destination);
           if (onMarkerClick) {
             onMarkerClick(destination);
+          }
+        });
+
+        // Handle popup open to attach event listener to button
+        marker.on('popupopen', () => {
+          const button = document.querySelector('.view-details-popup-btn');
+          if (button) {
+            button.onclick = () => {
+              if (onViewDetails) {
+                onViewDetails(destination);
+              }
+            };
           }
         });
 

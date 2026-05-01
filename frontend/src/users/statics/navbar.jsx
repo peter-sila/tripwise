@@ -56,7 +56,7 @@ const NavBar = () => {
 
   const fetchUser = async (token) => {
     try {
-      const response = await fetch(`${API_BASE}/auth.php`, {
+      const response = await fetch(`${API_BASE}/auth/me`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -64,8 +64,8 @@ const NavBar = () => {
         }
       });
       const data = await response.json();
-      if (data.user) {
-        setUser(data.user);
+      if (response.ok) {
+        setUser(data);
       }
     } catch (error) {
       console.error('Error fetching user:', error);
@@ -92,7 +92,7 @@ const NavBar = () => {
     // Debounce the search request by 300ms
     searchTimeoutRef.current = setTimeout(async () => {
       try {
-        const response = await fetch(`${API_BASE}/destinations.php?search=${encodeURIComponent(query)}`, {
+        const response = await fetch(`${API_BASE}/destinations/search?query=${encodeURIComponent(query)}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json'
@@ -100,9 +100,9 @@ const NavBar = () => {
         });
         const data = await response.json();
         
-        if (data.destinations) {
+        if (data.data && Array.isArray(data.data)) {
           // Limit results to 8 for dropdown
-          setSearchResults(data.destinations.slice(0, 8));
+          setSearchResults(data.data.slice(0, 8));
         } else {
           setSearchResults([]);
         }
@@ -138,13 +138,13 @@ const NavBar = () => {
 
   const handleAuth = async (e) => {
     e.preventDefault();
-    const endpoint = authMode === 'login' ? 'auth.php' : 'auth.php';
+    const endpoint = authMode === 'login' ? '/auth/login' : '/auth/register';
     const body = authMode === 'login' 
-      ? { action: 'login', email: authData.email, password: authData.password }
-      : { action: 'register', email: authData.email, password: authData.password, name: authData.name };
+      ? { email: authData.email, password: authData.password }
+      : { email: authData.email, password: authData.password, name: authData.name };
 
     try {
-      const response = await fetch(`${API_BASE}/${endpoint}`, {
+      const response = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -154,8 +154,8 @@ const NavBar = () => {
       const data = await response.json();
       
       // Handle successful response with token
-      if (data.token) {
-        localStorage.setItem('token', data.token);
+      if (response.ok && data.access_token) {
+        localStorage.setItem('token', data.access_token);
         localStorage.setItem('userInfo', JSON.stringify(data.user));
         setUser(data.user);
         setShowAuth(false);
@@ -163,7 +163,7 @@ const NavBar = () => {
         alert(getTranslation('loginSuccess', language));
         
         // Redirect to admin dashboard if user is admin
-        if (data.user && (data.user.role === 'admin' || data.user.role === 'super_admin')) {
+        if (data.user && data.user.is_admin) {
           localStorage.setItem('adminInfo', JSON.stringify(data.user));
           setTimeout(() => {
             window.location.href = '/admin/dashboard';
@@ -171,18 +171,12 @@ const NavBar = () => {
         }
       } 
       // Handle error response
-      else if (data.error) {
-        alert(`Error: ${data.error}`);
+      else if (data.detail) {
+        alert(`Error: ${data.detail}`);
       }
-      // Handle registration success (returns user_id instead of token)
-      else if (data.user_id && authMode === 'register') {
-        alert(getTranslation('registerSuccess', language));
-        setAuthMode('login');
-        setAuthData({ email: authData.email, password: authData.password, name: '' });
-      }
-      // Handle other success messages
-      else if (data.message) {
-        alert(data.message);
+      // Handle other error messages
+      else {
+        alert(data.message || 'Authentication failed');
       }
     } catch (error) {
       console.error('Auth error:', error);
@@ -199,20 +193,19 @@ const NavBar = () => {
 
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
-      const response = await fetch(`${API_BASE}/google-auth.php`, {
+      const response = await fetch(`${API_BASE}/auth/google`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          action: 'google_signin',
           id_token: credentialResponse.credential
         })
       });
       const data = await response.json();
       
-      if (data.success && data.token) {
-        localStorage.setItem('token', data.token);
+      if (response.ok && data.access_token) {
+        localStorage.setItem('token', data.access_token);
         localStorage.setItem('userInfo', JSON.stringify(data.user));
         setUser(data.user);
         setShowAuth(false);
@@ -220,14 +213,14 @@ const NavBar = () => {
         alert(getTranslation('loginSuccess', language));
         
         // Redirect to admin dashboard if user is admin
-        if (data.user && (data.user.role === 'admin' || data.user.role === 'super_admin')) {
+        if (data.user && data.user.is_admin) {
           localStorage.setItem('adminInfo', JSON.stringify(data.user));
           setTimeout(() => {
             window.location.href = '/admin/dashboard';
           }, 500);
         }
-      } else if (data.error) {
-        alert(`Error: ${data.error}`);
+      } else if (data.detail) {
+        alert(`Error: ${data.detail}`);
       }
     } catch (error) {
       console.error('Google auth error:', error);

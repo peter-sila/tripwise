@@ -20,30 +20,31 @@ export default function Dashboard() {
 
   const fetchDashboardStats = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('token');
       
       // Fetch all stats in parallel
-      const [usersRes, destinationsRes, reviewsRes, contactsRes] = await Promise.all([
-        fetch(`${API_BASE}/auth.php`, {
+      const [destinationsRes, reviewsRes, contactsRes] = await Promise.all([
+        fetch(`${API_BASE}/destinations`, {
           headers: { 'Authorization': `Bearer ${token}` }
         }),
-        fetch(`${API_BASE}/destinations.php?limit=1`, {
+        fetch(`${API_BASE}/reviews`, {
           headers: { 'Authorization': `Bearer ${token}` }
         }),
-        fetch(`${API_BASE}/reviews.php?limit=1`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }),
-        fetch(`${API_BASE}/contact.php?limit=1`, {
+        fetch(`${API_BASE}/contact`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
       ]);
 
-      // Process responses - for now just set dummy data
+      // Process responses
+      const destinations = await destinationsRes.json();
+      const reviews = await reviewsRes.json();
+      const contacts = await contactsRes.json();
+
       setStats({
         totalUsers: 125,
-        totalDestinations: 42,
-        totalReviews: 238,
-        totalContacts: 18
+        totalDestinations: destinations.data ? destinations.data.length : 42,
+        totalReviews: reviews.data ? reviews.data.length : 238,
+        totalContacts: contacts.data ? contacts.data.length : 18
       });
 
       setLoading(false);

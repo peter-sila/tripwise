@@ -17,13 +17,12 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE}/auth.php`, {
+      const response = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          action: 'login',
           email,
           password
         })
@@ -31,24 +30,24 @@ export default function AdminLogin() {
 
       const data = await response.json();
 
-      if (data.message === 'Login successful') {
+      if (response.ok && data.access_token) {
         const user = data.user;
         
         // Check if user is admin
-        if (!user.role || (user.role !== 'admin' && user.role !== 'super_admin')) {
+        if (!user.is_admin) {
           setError('You do not have admin access. Please use admin credentials.');
           setLoading(false);
           return;
         }
 
         // Store token and admin info in localStorage
-        localStorage.setItem('token', data.token);
+        localStorage.setItem('token', data.access_token);
         localStorage.setItem('adminInfo', JSON.stringify(user));
         
         // Redirect to dashboard
         window.location.href = '/admin/dashboard';
       } else {
-        setError(data.error || 'Login failed. Please try again.');
+        setError(data.detail || 'Login failed. Please try again.');
       }
     } catch (err) {
       console.error('Login error:', err);

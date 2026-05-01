@@ -23,6 +23,7 @@ import Navbar from "./statics/navbar.jsx";
 import Footer from "./statics/footer.jsx";
 import { Star, ThumbsUp, MessageCircle, User, Calendar, MapPin, Filter, X, AlertCircle, CheckCircle } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { getTranslation } from '../utils/translations';
 import './css/reviews.css';
@@ -47,6 +48,7 @@ const API_BASE = 'http://localhost:8000/api';
  */
 function Reviews() {
   const { language } = useLanguage();
+  const location = useLocation(); // Get location state from navigation
   
   // State for reviews data
   const [reviews, setReviews] = useState([]);         // Reviews for current destination
@@ -105,6 +107,25 @@ function Reviews() {
   }, [selectedDestination]);
 
   /**
+   * Effect Hook 3: Handle destination pre-selection from navigation state
+   * When navigating from DestinationDetails page, sets that destination as selected
+   * and automatically opens the review form
+   * 
+   * Dependencies: destinations, location - when destinations are fetched or location state changes
+   */
+  useEffect(() => {
+    if (destinations.length > 0 && location.state?.destinationId) {
+      // Find the destination matching the ID from location state
+      const destination = destinations.find(d => d.id == location.state.destinationId);
+      if (destination) {
+        // Set it as selected and open review form
+        setSelectedDestination(destination);
+        setShowReviewForm(true);
+      }
+    }
+  }, [destinations, location.state?.destinationId]);
+
+  /**
    * Fetch All Destinations
    * 
    * Makes API call to get list of all available destinations.
@@ -117,15 +138,15 @@ function Reviews() {
   const fetchDestinations = async () => {
     try {
       // Request all destinations from API
-      const response = await fetch(`${API_BASE}/destinations.php`);
+      const response = await fetch(`${API_BASE}/destinations`);
       const data = await response.json();
       
       // Update state with fetched destinations
-      if (data.destinations) {
-        setDestinations(data.destinations);
+      if (data.data && Array.isArray(data.data)) {
+        setDestinations(data.data);
         // Auto-select first destination if available
-        if (data.destinations.length > 0) {
-          setSelectedDestination(data.destinations[0]);
+        if (data.data.length > 0) {
+          setSelectedDestination(data.data[0]);
         }
       }
     } catch (error) {
@@ -147,12 +168,12 @@ function Reviews() {
   const fetchReviews = async (destinationId) => {
     try {
       // Request reviews for specific destination
-      const response = await fetch(`${API_BASE}/reviews.php?destination_id=${destinationId}`);
+      const response = await fetch(`${API_BASE}/reviews?destination_id=${destinationId}`);
       const data = await response.json();
       
       // Update state with fetched reviews or empty array if none
-      if (data.reviews) {
-        setReviews(data.reviews);
+      if (data.data && Array.isArray(data.data)) {
+        setReviews(data.data);
       } else {
         setReviews([]);
       }
@@ -219,7 +240,7 @@ function Reviews() {
     
     setSubmitting(true);
     try {
-      const response = await fetch(`${API_BASE}/reviews.php`, {
+      const response = await fetch(`${API_BASE}/reviews`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -299,11 +320,10 @@ function Reviews() {
     
     setLoginLoading(true);
     try {
-      const response = await fetch(`${API_BASE}auth.php`, {
+      const response = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'login',
           email: loginData.email,
           password: loginData.password
         })

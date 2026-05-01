@@ -12,7 +12,7 @@
  * - Responsive design for mobile and desktop
  * 
  * API Integration:
- * - GET /destinations.php - Fetch all destinations
+ * - Fetch destinations from backend API
  */
 
 import Navbar from "./statics/navbar.jsx";
@@ -20,6 +20,7 @@ import Footer from "./statics/footer.jsx";
 import MapView from "./MapView.jsx";
 import { Bed, Coffee, Sparkles, Star, MapPin, Heart, Users, Map, Grid3x3 } from 'lucide-react';
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { getTranslation } from '../utils/translations';
 import './css/destinations.css';
@@ -58,6 +59,7 @@ const perks = [
  */
 function Destinations() {
   const { language } = useLanguage();
+  const navigate = useNavigate(); // Initialize navigation
   // State management
   const [destinations, setDestinations] = useState([]);    // All destinations from API
   const [loading, setLoading] = useState(true);            // Loading indicator
@@ -113,12 +115,12 @@ function Destinations() {
   const fetchDestinations = async () => {
     try {
       // Make API request to get destinations
-      const response = await fetch(`${API_BASE}/destinations.php`);
+      const response = await fetch(`${API_BASE}/destinations`);
       const data = await response.json();
       
       // Update state with fetched data or empty array if unavailable
-      if (data.destinations) {
-        setDestinations(data.destinations);
+      if (data.data && Array.isArray(data.data)) {
+        setDestinations(data.data);
       } else {
         setDestinations([]);
       }
@@ -252,6 +254,12 @@ function Destinations() {
                             <Star size={16} fill="currentColor" /> {place.rating || 0}
                             <span className="reviews">({place.reviews || 0})</span>
                           </div>
+                          <button 
+                            className="view-details-btn"
+                            onClick={() => navigate(`/destination/${place.id}`)}
+                          >
+                            {getTranslation('viewDetails', language)}
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -272,6 +280,9 @@ function Destinations() {
                   onMarkerClick={(destination) => {
                     console.log('Clicked destination:', destination);
                   }}
+                  onViewDetails={(destination) => {
+                    navigate(`/destination/${destination.id}`);
+                  }}
                 />
               </div>
               )}
@@ -287,7 +298,12 @@ function Destinations() {
             <div className="cta-content">
               <h2>Ready to start your Kenya adventure?</h2>
               <p>Join thousands of travelers discovering incredible experiences with Wise Explore</p>
-              <button className="cta-button">Plan Your Trip</button>
+              <button 
+                className="cta-button"
+                onClick={() => navigate('/ai-planner?showForm=true')}
+              >
+                Plan Your Trip
+              </button>
             </div>
           </div>
         </section>

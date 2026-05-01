@@ -1,9 +1,70 @@
 import { Mail, Phone, MapPin, Share2, Heart } from 'lucide-react';
 import { Facebook, Twitter, Instagram, Linkedin } from 'react-bootstrap-icons';
+import React, { useState } from 'react';
 import '../css/footer.css';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
+  const [newsletter, setNewsletter] = useState({ email: '', loading: false, message: '' });
+  
+  const handleNewsletterChange = (e) => {
+    setNewsletter({ ...newsletter, email: e.target.value });
+    if (newsletter.message) setNewsletter(prev => ({ ...prev, message: '' }));
+  };
+
+  const handleNewsletterSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!newsletter.email || !newsletter.email.includes('@')) {
+      setNewsletter(prev => ({ 
+        ...prev, 
+        message: { type: 'error', text: 'Please enter a valid email' }
+      }));
+      return;
+    }
+
+    setNewsletter(prev => ({ ...prev, loading: true }));
+    
+    try {
+      const response = await fetch('http://localhost:8000/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: newsletter.email,
+          name: 'Newsletter Subscriber',
+          phone: '',
+          subject: 'Newsletter Subscription',
+          message: 'User subscribed to newsletter'
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setNewsletter({ 
+          email: '', 
+          loading: false, 
+          message: { type: 'success', text: 'Thank you for subscribing!' }
+        });
+        setTimeout(() => {
+          setNewsletter(prev => ({ ...prev, message: '' }));
+        }, 3000);
+      } else {
+        setNewsletter(prev => ({ 
+          ...prev, 
+          loading: false,
+          message: { type: 'error', text: data.error || 'Subscription failed. Please try again.' }
+        }));
+      }
+    } catch (error) {
+      console.error('Newsletter subscription error:', error);
+      setNewsletter(prev => ({ 
+        ...prev, 
+        loading: false,
+        message: { type: 'error', text: 'Network error. Please try again.' }
+      }));
+    }
+  };
  
   const footerLinks = {
     company: [
@@ -47,15 +108,29 @@ const Footer = () => {
           <div className="newsletter-content">
             <h3>Stay Updated with Travel Inspiration</h3>
             <p>Subscribe to our newsletter for exclusive deals and travel tips</p>
-            <form className="newsletter-form">
+            <form className="newsletter-form" onSubmit={handleNewsletterSubmit}>
               <input 
                 type="email" 
                 placeholder="Enter your email" 
+                value={newsletter.email}
+                onChange={handleNewsletterChange}
+                disabled={newsletter.loading}
                 required
                 className="newsletter-input"
               />
-              <button type="submit" className="newsletter-btn">Subscribe</button>
+              <button 
+                type="submit" 
+                className="newsletter-btn"
+                disabled={newsletter.loading}
+              >
+                {newsletter.loading ? 'Subscribing...' : 'Subscribe'}
+              </button>
             </form>
+            {newsletter.message && (
+              <div className={`newsletter-message ${newsletter.message.type}`}>
+                {newsletter.message.text}
+              </div>
+            )}
           </div>
         </div>
       </div>

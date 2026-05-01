@@ -1,7 +1,8 @@
 import Navbar from "./statics/navbar.jsx";
 import Footer from "./statics/footer.jsx";
-import { Zap, MapPin, Calendar, Users, Brain, Sparkles, Plus, Send, Bell, Download, Edit2, Trash2 } from 'lucide-react';
+import { Zap, MapPin, Calendar, Users, Brain, Sparkles, Plus, Send, Bell, Download, Edit2, Trash2, Loader } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { getTranslation } from '../utils/translations';
 import './css/aiplanner.css';
@@ -10,42 +11,49 @@ const API_BASE = 'http://localhost:8000/api';
 
 function AIPlanner() {
   const { language } = useLanguage();
+  const [searchParams] = useSearchParams();
   
   const [tripPlans, setTripPlans] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(searchParams.get('showForm') === 'true');
   const [formLoading, setFormLoading] = useState(false);
   const [formMessage, setFormMessage] = useState('');
-  const [contactLoading, setContactLoading] = useState(false);
-  const [contactMessage, setContactMessage] = useState('');
-  const [editingPlanId, setEditingPlanId] = useState(null);
+  const [generatingPlan, setGeneratingPlan] = useState(false);
+  const [generatedPlan, setGeneratedPlan] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(null);
+  
   const [features, setFeatures] = useState([
     { icon: Zap, title: getTranslation('fastEfficient', language), description: getTranslation('generateTravelPlans', language) },
     { icon: MapPin, title: getTranslation('localInsights', language), description: getTranslation('discoverHiddenGems', language) },
     { icon: Calendar, title: getTranslation('smartScheduling', language), description: getTranslation('optimizeItinerary', language) },
     { icon: Users, title: getTranslation('personalizedExperience', language), description: getTranslation('tailoredRecommendations', language) }
   ]);
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
+  
+  // AI Questionnaire Form State
+  const [aiFormData, setAiFormData] = useState({
+    destination: '',
+    duration_days: '5',
     start_date: '',
-    end_date: '',
+    budget: 'moderate',
+    travel_style: 'balanced',
+    group_size: '2',
+    interests: ['sightseeing', 'local cuisine'],
+    accommodation: 'hotel'
   });
-  const [tripItems, setTripItems] = useState([]);
-  const [itemFormData, setItemFormData] = useState({
-    title: '',
-    description: '',
-    date: '',
-    time: ''
-  });
-  const [contactFormData, setContactFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    subject: '',
-    message: '',
-  });
+  const [selectedInterests, setSelectedInterests] = useState(['sightseeing', 'local cuisine']);
+  
+  const availableInterests = [
+    'sightseeing',
+    'adventure',
+    'local cuisine',
+    'cultural experiences',
+    'beaches',
+    'hiking',
+    'shopping',
+    'nightlife',
+    'museums',
+    'photography'
+  ];
 
   useEffect(() => {
     fetchTripPlans();
@@ -61,14 +69,14 @@ function AIPlanner() {
         return;
       }
 
-      const response = await fetch(`${API_BASE}/aiPlanner.php`, {
+      const response = await fetch(`${API_BASE}/trip-plans`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       const data = await response.json();
-      if (data.trip_plans) {
-        setTripPlans(data.trip_plans);
+      if (data.data && Array.isArray(data.data)) {
+        setTripPlans(data.data);
       }
     } catch (error) {
       console.error('Error fetching trip plans:', error);
@@ -121,7 +129,7 @@ function AIPlanner() {
     setContactMessage('');
 
     try {
-      const response = await fetch(`${API_BASE}/contact.php`, {
+      const response = await fetch(`${API_BASE}/contact`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -137,7 +145,7 @@ function AIPlanner() {
 
       const data = await response.json();
 
-      if (data.success) {
+      if (response.ok) {
         setContactMessage(getTranslation('messageSent', language));
         setContactFormData({
           name: '',
@@ -149,7 +157,7 @@ function AIPlanner() {
         // Clear success message after 5 seconds
         setTimeout(() => setContactMessage(''), 5000);
       } else {
-        setContactMessage(data.error || getTranslation('messageError', language));
+        setContactMessage(data.detail || getTranslation('messageError', language));
       }
     } catch (error) {
       console.error('Error submitting contact form:', error);
@@ -230,17 +238,17 @@ END:VCALENDAR`;
 
     setDeleteLoading(planId);
     try {
-      const response = await fetch(`${API_BASE}/aiPlanner.php?id=${planId}`, {
+      const response = await fetch(`${API_BASE}/trip-plans/${planId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       const data = await response.json();
-      if (data.success || data.message) {
+      if (response.ok) {
         setTripPlans(tripPlans.filter(plan => plan.id !== planId));
       } else {
-        alert(data.error || getTranslation('errorDeletingPlan', language) || 'Failed to delete plan');
+        alert(data.detail || getTranslation('errorDeletingPlan', language) || 'Failed to delete plan');
       }
     } catch (error) {
       console.error('Error deleting trip plan:', error);
@@ -302,7 +310,7 @@ END:VCALENDAR`;
 
     try {
       const method = editingPlanId ? 'PUT' : 'POST';
-      const url = editingPlanId ? `${API_BASE}/aiPlanner.php?id=${editingPlanId}` : `${API_BASE}/aiPlanner.php`;
+      const url = editingPlanId ? `${API_BASE}/trip-plans/${editingPlanId}` : `${API_BASE}/trip-plans`;
       
       const response = await fetch(url, {
         method: method,

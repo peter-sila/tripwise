@@ -25,6 +25,7 @@ import Footer from "./statics/footer.jsx";
 import MapView from "./MapView.jsx";
 import { Search, MapPin, Heart, Share2, Tag, TrendingUp, Filter, Map, Grid3x3 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { getTranslation } from '../utils/translations';
 import './css/discover.css';
@@ -61,6 +62,7 @@ const categories = [
  */
 function Discover() {
   const { language } = useLanguage();
+  const navigate = useNavigate();
   
   // Category options with translations
   const categories = [
@@ -127,16 +129,16 @@ function Discover() {
     try {
       // Build query parameters based on active filters
       const params = new URLSearchParams();
-      if (searchTerm) params.append('search', searchTerm);
+      if (searchTerm) params.append('query', searchTerm);
       if (activeCategory) params.append('category', activeCategory);
       
       // Fetch destinations with active filters
-      const response = await fetch(`${API_BASE}/destinations.php?${params}`);
+      const response = await fetch(`${API_BASE}/destinations/search?${params}`);
       const data = await response.json();
       
       // Update state with results
-      if (data.destinations) {
-        setDiscoveries(data.destinations);
+      if (data.data && Array.isArray(data.data)) {
+        setDiscoveries(data.data);
       }
     } catch (error) {
       console.error('Error fetching discoveries:', error);
@@ -302,7 +304,12 @@ function Discover() {
             <div className="cta-content">
               <h2>Found Your Favorite Spot?</h2>
               <p>Plan your visit and book accommodations through TripWise</p>
-              <button className="cta-button">Start Planning</button>
+              <button 
+                className="cta-button"
+                onClick={() => navigate('/ai-planner?showForm=true')}
+              >
+                Start Planning
+              </button>
             </div>
           </div>
         </section>
