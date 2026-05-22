@@ -3,7 +3,7 @@ Pydantic schemas for request/response validation
 """
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
-from datetime import date, time
+from datetime import date, time, datetime
 
 
 # ===== User Schemas =====
@@ -24,7 +24,7 @@ class UserLogin(BaseModel):
 class UserResponse(UserBase):
     id: int
     is_active: bool
-    created_at: str
+    created_at: datetime
     
     class Config:
         from_attributes = True
@@ -45,7 +45,7 @@ class DestinationCreate(DestinationBase):
 
 class DestinationResponse(DestinationBase):
     id: int
-    created_at: str
+    created_at: datetime
     
     class Config:
         from_attributes = True
@@ -74,7 +74,7 @@ class TripPlanItemCreate(TripPlanItemBase):
 class TripPlanItemResponse(TripPlanItemBase):
     id: int
     trip_plan_id: int
-    created_at: str
+    created_at: datetime
     
     class Config:
         from_attributes = True
@@ -103,8 +103,8 @@ class TripPlanUpdate(BaseModel):
 class TripPlanResponse(TripPlanBase):
     id: int
     user_id: int
-    created_at: str
-    updated_at: str
+    created_at: datetime
+    updated_at: datetime
     items: List[TripPlanItemResponse] = []
     
     class Config:
@@ -125,7 +125,7 @@ class ReviewResponse(ReviewBase):
     id: int
     user_id: int
     destination_id: int
-    created_at: str
+    created_at: datetime
     
     class Config:
         from_attributes = True
@@ -145,7 +145,7 @@ class TravelTipCreate(TravelTipBase):
 class TravelTipResponse(TravelTipBase):
     id: int
     user_id: int
-    created_at: str
+    created_at: datetime
     
     class Config:
         from_attributes = True
@@ -162,7 +162,7 @@ class ContactMessageCreate(BaseModel):
 
 class ContactMessageResponse(ContactMessageCreate):
     id: int
-    created_at: str
+    created_at: datetime
     
     class Config:
         from_attributes = True
