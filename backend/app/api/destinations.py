@@ -3,10 +3,9 @@ Destination API routes
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import List
 from app.database import get_db
-from app.schemas import DestinationResponse, DestinationSearch
 from app.services.destination_service import DestinationService
+from app.utils.response_formatter import model_to_dict
 
 router = APIRouter(prefix="/api/destinations", tags=["destinations"])
 
@@ -30,7 +29,7 @@ async def list_destinations(
     destinations = DestinationService.get_all_destinations(db, limit=limit, offset=offset)
     return {
         "success": True,
-        "data": [DestinationResponse.model_validate(d) for d in destinations],
+        "data": [model_to_dict(d) for d in destinations],
         "limit": limit,
         "offset": offset
     }
@@ -56,18 +55,17 @@ async def search_destinations(
     Returns:
         List of matching destinations
     """
-    search_params = DestinationSearch(
+    destinations = DestinationService.search_destinations(
+        db,
         query=query,
         category=category,
         limit=limit,
         offset=offset
     )
-    
-    destinations = DestinationService.search_destinations(db, search_params)
-    
+
     return {
         "success": True,
-        "data": [DestinationResponse.model_validate(d) for d in destinations],
+        "data": [model_to_dict(d) for d in destinations],
         "query": query,
         "category": category,
         "count": len(destinations)
@@ -95,5 +93,5 @@ async def get_destination(destination_id: int, db: Session = Depends(get_db)):
     
     return {
         "success": True,
-        "data": DestinationResponse.model_validate(destination)
+        "data": model_to_dict(destination)
     }

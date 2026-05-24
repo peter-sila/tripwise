@@ -3,13 +3,13 @@ Trip Plan API routes
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List, Dict, Any
+from typing import Dict, Any
 from app.database import get_db
-from app.schemas import TripPlanCreate, TripPlanUpdate, TripPlanResponse
 from app.services.trip_plan_service import TripPlanService
 from app.services.ai_trip_service import AITripService
 from app.middleware.auth import get_current_user
 from app.models.user import User
+from app.utils.response_formatter import model_to_dict
 
 router = APIRouter(prefix="/api/trip-plans", tags=["trip-plans"])
 
@@ -38,42 +38,41 @@ async def generate_trip_with_ai(
         Generated trip plan data
     """
     try:
-        # Validate preferences
         is_valid, message = AITripService.validate_preferences(preferences)
         if not is_valid:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message)
-        
-        # Generate trip plan using AI
+
         trip_data = AITripService.generate_trip_plan(preferences)
-        
-        # Optionally save to database
+
         if preferences.get('auto_save', False):
-            plan_create = TripPlanCreate(
-                title=trip_data.get('title', 'AI Generated Trip'),
-                description=trip_data.get('description', ''),
-                start_date=trip_data.get('start_date'),
-                end_date=trip_data.get('end_date'),
-                items=trip_data.get('items', [])
-            )
-            trip_plan = TripPlanService.create_trip_plan(db, current_user.id, plan_create)
+            plan_data = {
+                "title": trip_data.get('title', 'AI Generated Trip'),
+                "description": trip_data.get('description', ''),
+                "start_date": trip_data.get('start_date'),
+                "end_date": trip_data.get('end_date'),
+                "items": trip_data.get('items', [])
+            }
+            trip_plan = TripPlanService.create_trip_plan(db, current_user.id, plan_data)
             return {
                 "success": True,
                 "message": "Trip plan generated and saved successfully",
-                "data": TripPlanResponse.model_validate(trip_plan)
+                "data": model_to_dict(trip_plan)
             }
-        else:
-            return {
-                "success": True,
-                "message": "Trip plan generated successfully",
-                "data": trip_data
-            }
-        
+
+        return {
+            "success": True,
+            "message": "Trip plan generated successfully",
+            "data": trip_data
+        }
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.post("", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_trip_plan(
-    plan_data: TripPlanCreate,
+    plan_data: dict,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -92,11 +91,10 @@ async def create_trip_plan(
     """
     try:
         trip_plan = TripPlanService.create_trip_plan(db, current_user.id, plan_data)
-        
         return {
             "success": True,
             "message": "Trip plan created successfully",
-            "data": TripPlanResponse.model_validate(trip_plan)
+            "data": model_to_dict(trip_plan)
         }
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -114,10 +112,10 @@ async def get_trip_plans(
         List of user's trip plans
     """
     trip_plans = TripPlanService.get_user_trip_plans(db, current_user.id)
-    
+
     return {
         "success": True,
-        "data": [TripPlanResponse.model_validate(plan) for plan in trip_plans]
+        "data": [model_to_dict(plan) for plan in trip_plans]
     }
 
 
@@ -137,23 +135,23 @@ async def get_trip_plan(
         Trip plan data
     """
     trip_plan = TripPlanService.get_trip_plan(db, plan_id, current_user.id)
-    
+
     if not trip_plan:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Trip plan not found"
         )
-    
+
     return {
         "success": True,
-        "data": TripPlanResponse.model_validate(trip_plan)
+        "data": model_to_dict(trip_plan)
     }
 
 
 @router.put("/{plan_id}", response_model=dict)
 async def update_trip_plan(
     plan_id: int,
-    plan_data: TripPlanUpdate,
+    plan_data: dict,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -174,17 +172,17 @@ async def update_trip_plan(
         Updated trip plan data
     """
     trip_plan = TripPlanService.update_trip_plan(db, plan_id, current_user.id, plan_data)
-    
+
     if not trip_plan:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Trip plan not found"
         )
-    
+
     return {
         "success": True,
         "message": "Trip plan updated successfully",
-        "data": TripPlanResponse.model_validate(trip_plan)
+        "data": model_to_dict(trip_plan)
     }
 
 
@@ -204,13 +202,13 @@ async def delete_trip_plan(
         Success message
     """
     success = TripPlanService.delete_trip_plan(db, plan_id, current_user.id)
-    
+
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Trip plan not found"
         )
-    
+
     return {
         "success": True,
         "message": "Trip plan deleted successfully"

@@ -33,6 +33,12 @@ def create_app() -> FastAPI:
     
     # Setup CORS middleware
     setup_cors(app)
+    # Performance timing middleware (logs duration and adds X-Process-Time-ms header)
+    try:
+        from app.middleware.perf import request_timing_middleware
+        app.middleware('http')(request_timing_middleware)
+    except Exception:
+        pass
     
     # Include API routers
     app.include_router(api_router)

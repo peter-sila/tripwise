@@ -23,32 +23,12 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { getTranslation } from '../utils/translations';
+import { getSafeImageUrl } from './utils/imageUtils';
 import './css/destinations.css';
 
 // API base URL for all backend requests
 const API_BASE = 'http://localhost:8000/api';
 
-/**
- * Category options displayed in filter buttons
- * Maps to destination categories in database
- */
-const heroCategories = [
-  { label: 'All', value: '', icon: Sparkles },           // Show all destinations
-  { label: 'Hotels', value: 'accommodation', icon: Bed }, // Filter accommodations
-  { label: 'Restaurants', value: 'gastronomy', icon: Coffee }, // Filter restaurants
-  { label: 'Adventures', value: 'adventure', icon: Users }, // Filter adventures
-  { label: 'Activities', value: 'activity', icon: Sparkles }, // Filter activities
-];
-
-/**
- * Marketing perks displayed in hero section
- * Shows value propositions for the service
- */
-const perks = [
-  { title: 'Curated stays', value: '120+', description: 'Handpicked hotels and unique homes.' },
-  { title: 'Top rated', value: '4.8 ★', description: 'Trusted reviews from guests worldwide.' },
-  { title: 'Local guides', value: '50+', description: 'Authentic experiences with insider tips.' },
-];
 
 /**
  * Destinations Page Component
@@ -95,14 +75,6 @@ function Destinations() {
   ];
 
   /**
-   * Effect Hook - Fetch destinations on component mount
-   * Called only once when component first renders (empty dependency array)
-   */
-  useEffect(() => {
-    fetchDestinations();
-  }, []);
-
-  /**
    * Fetch Destinations from Backend API
    * 
    * Makes GET request to fetch all destinations from database.
@@ -112,7 +84,7 @@ function Destinations() {
    * @async
    * @returns {Promise<void>}
    */
-  const fetchDestinations = async () => {
+  async function fetchDestinations() {
     try {
       // Make API request to get destinations
       const response = await fetch(`${API_BASE}/destinations`);
@@ -133,6 +105,13 @@ function Destinations() {
       setLoading(false);
     }
   };
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  /* eslint-disable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
+  useEffect(() => {
+    fetchDestinations();
+  }, []);
+  /* eslint-enable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
 
   /**
    * Memoized Filtered Destinations
@@ -241,7 +220,13 @@ function Destinations() {
                   featuredDestinations.map((place) => (
                     <div key={place.id || place.name} className="simple-card">
                       <div className="card-image-wrapper">
-                        <img src={place.image_url || place.image} alt={place.name} className="card-image" />
+                        <img
+                          src={getSafeImageUrl(place.image_url || place.image)}
+                          alt={place.name}
+                          className="card-image"
+                          loading="lazy"
+                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 400'><rect width='100%' height='100%' fill='%23eaeaea'/><text x='50%' y='50%' font-size='28' dominant-baseline='middle' text-anchor='middle' fill='%23666' font-family='Arial, Helvetica, sans-serif'>No Image</text></svg>"; }}
+                        />
                         <button className="favorite-btn" aria-label="Add to favorites">
                           <Heart size={20} />
                         </button>
@@ -277,9 +262,7 @@ function Destinations() {
               <div className="map-view-container">
                 <MapView 
                   destinations={filteredDestinations} 
-                  onMarkerClick={(destination) => {
-                    console.log('Clicked destination:', destination);
-                  }}
+                  onMarkerClick={() => {} }
                   onViewDetails={(destination) => {
                     navigate(`/destination/${destination.id}`);
                   }}

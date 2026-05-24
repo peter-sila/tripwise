@@ -1,15 +1,10 @@
-import { createContext, useState, useContext, useEffect } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useState, useContext } from 'react';
 
 const LanguageContext = createContext();
 
 export const LanguageProvider = ({ children }) => {
-  const [language, setLanguage] = useState('en');
-
-  useEffect(() => {
-    // Load language from localStorage
-    const savedLanguage = localStorage.getItem('language') || 'en';
-    setLanguage(savedLanguage);
-  }, []);
+  const [language, setLanguage] = useState(() => localStorage.getItem('language') || 'en');
 
   const changeLanguage = (newLanguage) => {
     setLanguage(newLanguage);

@@ -20,6 +20,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { getTranslation } from '../utils/translations';
+import { getSafeImageUrl } from './utils/imageUtils';
 import './css/destinationdetails.css';
 
 // API base URL for backend requests
@@ -46,15 +47,6 @@ function DestinationDetails() {
   const [reviews, setReviews] = useState([]);               // Related reviews
 
   /**
-   * Effect Hook - Fetch destination details on component mount
-   * Runs when component first loads or when ID changes
-   */
-  useEffect(() => {
-    fetchDestinationDetails();
-    fetchDestinationReviews();
-  }, [id]);
-
-  /**
    * Fetch Destination Details from Backend API
    * 
    * Makes GET request to fetch detailed information about a specific destination.
@@ -62,7 +54,7 @@ function DestinationDetails() {
    * @async
    * @returns {Promise<void>}
    */
-  const fetchDestinationDetails = async () => {
+  async function fetchDestinationDetails() {
     try {
       setLoading(true);
       const response = await fetch(`${API_BASE}/destinations/${id}`);
@@ -89,7 +81,7 @@ function DestinationDetails() {
    * @async
    * @returns {Promise<void>}
    */
-  const fetchDestinationReviews = async () => {
+  async function fetchDestinationReviews() {
     try {
       const response = await fetch(`${API_BASE}/reviews?destination_id=${id}`);
       const data = await response.json();
@@ -101,7 +93,14 @@ function DestinationDetails() {
     } catch (error) {
       console.error('Error fetching reviews:', error);
     }
-  };
+  }
+
+  /* eslint-disable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
+  useEffect(() => {
+    fetchDestinationDetails();
+    fetchDestinationReviews();
+  }, [id]);
+  /* eslint-enable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
 
   /**
    * Toggle Favorite Status
@@ -120,7 +119,7 @@ function DestinationDetails() {
         title: destination.name,
         text: destination.description,
         url: window.location.href,
-      }).catch((error) => console.log('Share error:', error));
+      }).catch((error) => console.error('Share error:', error));
     } else {
       // Fallback: Copy URL to clipboard
       navigator.clipboard.writeText(window.location.href);
@@ -205,9 +204,10 @@ function DestinationDetails() {
           <div className="image-container">
             {destination.image_url && (
               <img 
-                src={destination.image_url} 
+                src={getSafeImageUrl(destination.image_url)} 
                 alt={destination.name}
                 className="featured-image"
+                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 600'><rect width='100%' height='100%' fill='%23eaeaea'/><text x='50%' y='50%' font-size='36' dominant-baseline='middle' text-anchor='middle' fill='%23666' font-family='Arial, Helvetica, sans-serif'>No Image</text></svg>"; }}
               />
             )}
             <div className="image-overlay"></div>

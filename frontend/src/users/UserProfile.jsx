@@ -22,11 +22,7 @@ export default function UserProfile() {
     confirmPassword: '',
   });
 
-  useEffect(() => {
-    loadUserProfile();
-  }, []);
-
-  const loadUserProfile = async () => {
+  async function loadUserProfile() {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -58,7 +54,13 @@ export default function UserProfile() {
       setError('Failed to load profile');
       setLoading(false);
     }
-  };
+  }
+
+  /* eslint-disable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
+  useEffect(() => {
+    loadUserProfile();
+  }, []);
+  /* eslint-enable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

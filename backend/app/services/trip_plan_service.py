@@ -3,17 +3,15 @@ Trip plan service for business logic
 """
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
-from datetime import date
 from typing import List, Optional
 from app.models.trip_plan import TripPlan, TripPlanItem
-from app.schemas import TripPlanCreate, TripPlanUpdate
 
 
 class TripPlanService:
     """Service for trip plan operations"""
     
     @staticmethod
-    def create_trip_plan(db: Session, user_id: int, plan_data: TripPlanCreate) -> TripPlan:
+    def create_trip_plan(db: Session, user_id: int, plan_data: dict) -> TripPlan:
         """
         Create a new trip plan
         
@@ -25,30 +23,28 @@ class TripPlanService:
         Returns:
             Created trip plan object
         """
-        # Create trip plan
         trip_plan = TripPlan(
             user_id=user_id,
-            title=plan_data.title,
-            description=plan_data.description,
-            start_date=plan_data.start_date,
-            end_date=plan_data.end_date
+            title=plan_data.get("title"),
+            description=plan_data.get("description"),
+            start_date=plan_data.get("start_date"),
+            end_date=plan_data.get("end_date")
         )
         db.add(trip_plan)
         db.flush()
-        
-        # Add items if provided
-        if plan_data.items:
-            for item_data in plan_data.items:
-                item = TripPlanItem(
-                    trip_plan_id=trip_plan.id,
-                    title=item_data.title,
-                    description=item_data.description,
-                    destination_id=item_data.destination_id,
-                    date=item_data.date,
-                    time=item_data.time
-                )
-                db.add(item)
-        
+
+        items = plan_data.get("items") or []
+        for item_data in items:
+            item = TripPlanItem(
+                trip_plan_id=trip_plan.id,
+                title=item_data.get("title"),
+                description=item_data.get("description"),
+                destination_id=item_data.get("destination_id"),
+                date=item_data.get("date"),
+                time=item_data.get("time")
+            )
+            db.add(item)
+
         db.commit()
         db.refresh(trip_plan)
         return trip_plan
@@ -87,7 +83,7 @@ class TripPlanService:
         ).all()
     
     @staticmethod
-    def update_trip_plan(db: Session, plan_id: int, user_id: int, plan_data: TripPlanUpdate) -> Optional[TripPlan]:
+    def update_trip_plan(db: Session, plan_id: int, user_id: int, plan_data: dict) -> Optional[TripPlan]:
         """
         Update a trip plan
         
@@ -104,30 +100,25 @@ class TripPlanService:
         if not trip_plan:
             return None
         
-        # Update fields
-        if plan_data.title is not None:
-            trip_plan.title = plan_data.title
-        if plan_data.description is not None:
-            trip_plan.description = plan_data.description
-        if plan_data.start_date is not None:
-            trip_plan.start_date = plan_data.start_date
-        if plan_data.end_date is not None:
-            trip_plan.end_date = plan_data.end_date
+        if plan_data.get("title") is not None:
+            trip_plan.title = plan_data.get("title")
+        if plan_data.get("description") is not None:
+            trip_plan.description = plan_data.get("description")
+        if plan_data.get("start_date") is not None:
+            trip_plan.start_date = plan_data.get("start_date")
+        if plan_data.get("end_date") is not None:
+            trip_plan.end_date = plan_data.get("end_date")
         
-        # Update items if provided
-        if plan_data.items is not None:
-            # Delete existing items
+        if "items" in plan_data:
             db.query(TripPlanItem).filter(TripPlanItem.trip_plan_id == plan_id).delete()
-            
-            # Add new items
-            for item_data in plan_data.items:
+            for item_data in plan_data.get("items") or []:
                 item = TripPlanItem(
                     trip_plan_id=plan_id,
-                    title=item_data.title,
-                    description=item_data.description,
-                    destination_id=item_data.destination_id,
-                    date=item_data.date,
-                    time=item_data.time
+                    title=item_data.get("title"),
+                    description=item_data.get("description"),
+                    destination_id=item_data.get("destination_id"),
+                    date=item_data.get("date"),
+                    time=item_data.get("time")
                 )
                 db.add(item)
         

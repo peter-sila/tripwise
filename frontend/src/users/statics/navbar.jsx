@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { Menu, X, Search, User, Globe, LogIn, LogOut, Loader, MapPin, Tag } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { useLanguage } from '../../context/LanguageContext';
 import { getTranslation } from '../../utils/translations';
+import { getSafeImageUrl } from '../utils/imageUtils';
 import ProfileModal from './ProfileModal';
 import '../css/navbar.css';
 
@@ -19,6 +21,7 @@ const NavBar = () => {
   const [showUserMenu, setShowUserMenu] = useState(false); // For user profile dropdown
   const [showLanguageMenu, setShowLanguageMenu] = useState(false); // For language selector
   const [showProfileModal, setShowProfileModal] = useState(false); // For profile modal
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -28,11 +31,45 @@ const NavBar = () => {
   const searchInputRef = useRef(null);
   const searchTimeoutRef = useRef(null);
 
+  async function fetchUser(token) {
+    try {
+      const response = await fetch(`${API_BASE}/auth/me`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await response.json();
+      if (response.ok && data.data) {
+        setUser(data.data);
+      } else {
+        setUser(null);
+      }
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      setUser(null);
+    }
+  }
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
+      /* eslint-disable react-hooks/set-state-in-effect */
       fetchUser(token);
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
+  }, []);
+
+  // Listen for global requests to open the auth popup (e.g., session expiry)
+  useEffect(() => {
+    const openAuthHandler = (e) => {
+      const mode = e?.detail?.mode || 'login';
+      setAuthMode(mode);
+      setShowAuth(true);
+    };
+    window.addEventListener('openAuth', openAuthHandler);
+    return () => window.removeEventListener('openAuth', openAuthHandler);
   }, []);
 
   // Close menus when clicking outside
@@ -54,23 +91,6 @@ const NavBar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const fetchUser = async (token) => {
-    try {
-      const response = await fetch(`${API_BASE}/auth/me`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setUser(data);
-      }
-    } catch (error) {
-      console.error('Error fetching user:', error);
-    }
-  };
 
   const handleSearch = async (query) => {
     setSearchQuery(query);
@@ -116,8 +136,7 @@ const NavBar = () => {
   };
 
   const handleSearchResultClick = (destination) => {
-    // Navigate to destination or show details
-    window.location.href = `/?destination=${destination.id}`;
+    navigate(`/destination/${destination.id}`);
     setIsSearchOpen(false);
     setSearchQuery('');
     setSearchResults([]);
@@ -128,8 +147,7 @@ const NavBar = () => {
       e.preventDefault();
     }
     if (searchQuery.trim()) {
-      // Navigate to discover page with search query
-      window.location.href = `/discover?search=${encodeURIComponent(searchQuery)}`;
+      navigate(`/discover?search=${encodeURIComponent(searchQuery)}`);
       setIsSearchOpen(false);
       setSearchQuery('');
       setSearchResults([]);
@@ -166,7 +184,7 @@ const NavBar = () => {
         if (data.user && data.user.is_admin) {
           localStorage.setItem('adminInfo', JSON.stringify(data.user));
           setTimeout(() => {
-            window.location.href = '/admin/dashboard';
+            navigate('/admin/dashboard');
           }, 500);
         }
       } 
@@ -216,7 +234,7 @@ const NavBar = () => {
         if (data.user && data.user.is_admin) {
           localStorage.setItem('adminInfo', JSON.stringify(data.user));
           setTimeout(() => {
-            window.location.href = '/admin/dashboard';
+            navigate('/admin/dashboard');
           }, 500);
         }
       } else if (data.detail) {
@@ -229,7 +247,7 @@ const NavBar = () => {
   };
 
   const handleGoogleError = () => {
-    console.log('Google Login Failed');
+    console.error('Google Login Failed');
     alert('Google Sign-In failed. Please try again.');
   };
 
@@ -421,12 +439,16 @@ const NavBar = () => {
               <span>{getTranslation('orContinueWith', language)}</span>
             </div>
             <div className="google-signin-container">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={handleGoogleError}
-                text={authMode === 'login' ? 'signin_with' : 'signup_with'}
-                locale={language}
-              />
+              {import.meta.env.VITE_GOOGLE_CLIENT_ID && import.meta.env.VITE_GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID_HERE' ? (
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                  text={authMode === 'login' ? 'signin_with' : 'signup_with'}
+                  locale={language}
+                />
+              ) : (
+                <div className="google-placeholder">{getTranslation('googleNotConfigured', language) || 'Google Sign-In not configured'}</div>
+              )}
             </div>
 
             <button 
@@ -496,9 +518,11 @@ const NavBar = () => {
                               <div className="result-icon">
                                 {destination.image_url ? (
                                   <img 
-                                    src={destination.image_url} 
+                                    src={getSafeImageUrl(destination.image_url)} 
                                     alt={destination.name}
                                     className="result-image"
+                                    loading="lazy"
+                                    onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 80'><rect width='100%' height='100%' fill='%23eaeaea'/><text x='50%' y='50%' font-size='12' dominant-baseline='middle' text-anchor='middle' fill='%23666' font-family='Arial, Helvetica, sans-serif'>No Image</text></svg>"; }}
                                   />
                                 ) : (
                                   <MapPin size={16} />

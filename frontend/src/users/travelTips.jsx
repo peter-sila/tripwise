@@ -32,20 +32,6 @@ import './css/traveltips.css';
 const API_BASE = 'http://localhost:8000/api';
 
 /**
- * Available tip categories
- * Each category has an ID, label, and emoji icon for visual identification
- */
-const categories = [
-  { id: '', label: 'All', icon: '📚' },           // Show all tips
-  { id: 'packing', label: 'Packing', icon: '🎒' },     // What to pack
-  { id: 'safety', label: 'Safety', icon: '🛡️' },       // Safety advice
-  { id: 'budget', label: 'Budget', icon: '💰' },       // Money-saving tips
-  { id: 'health', label: 'Health', icon: '💊' },       // Health considerations
-  { id: 'culture', label: 'Culture', icon: '🎭' },     // Cultural etiquette
-  { id: 'transport', label: 'Transport', icon: '🚗' },  // Transportation info
-];
-
-/**
  * Travel Tips Component
  * 
  * Main component for browsing travel tips with category filtering
@@ -80,16 +66,6 @@ function TravelTips() {
   const [expandedTip, setExpandedTip] = useState(null);    // Currently expanded tip
 
   /**
-   * Effect Hook: Fetch tips when category changes
-   * 
-   * Fetches travel tips whenever user selects a different category.
-   * Dependency: selectedCategory - triggers fetch when category ID changes
-   */
-  useEffect(() => {
-    fetchTips();
-  }, [selectedCategory]);
-
-  /**
    * Fetch Travel Tips from Backend API
    * 
    * Makes API call to get travel tips matching selected category.
@@ -102,7 +78,7 @@ function TravelTips() {
    * @async
    * @returns {Promise<void>}
    */
-  const fetchTips = async () => {
+  async function fetchTips() {
     setLoading(true);
     try {
       // Travel tips endpoint (placeholder for now)
@@ -122,8 +98,33 @@ function TravelTips() {
       // Mark loading as complete
       setLoading(false);
     }
-  };
+  }
 
+  /**
+   * Effect Hook: Fetch tips when category changes
+   * 
+   * Fetches travel tips whenever user selects a different category.
+   * Dependency: selectedCategory - triggers fetch when category ID changes
+   */
+  /* eslint-disable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
+  useEffect(() => {
+    fetchTips();
+  }, [selectedCategory]);
+  /* eslint-enable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
+
+  /**
+   * Filter Tips Based on Category
+   * 
+   * Makes API call to get travel tips matching selected category.
+   * If no category selected, fetches all tips.
+   * Handles loading state and errors gracefully.
+   * 
+   * Query Parameters:
+   *   - category (optional): Category ID to filter tips
+   * 
+   * @async
+   * @returns {Promise<void>}
+   */
   /**
    * Filter Tips Based on Category
    * 

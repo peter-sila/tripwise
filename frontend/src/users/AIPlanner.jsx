@@ -6,6 +6,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { getTranslation } from '../utils/translations';
 import './css/aiplanner.css';
+import SessionExpiredModal from './statics/SessionExpiredModal.jsx';
 
 const API_BASE = 'http://localhost:8000/api';
 
@@ -19,15 +20,14 @@ function AIPlanner() {
   const [formLoading, setFormLoading] = useState(false);
   const [formMessage, setFormMessage] = useState('');
   const [generatingPlan, setGeneratingPlan] = useState(false);
-  const [generatedPlan, setGeneratedPlan] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(null);
   
-  const [features, setFeatures] = useState([
+  const features = [
     { icon: Zap, title: getTranslation('fastEfficient', language), description: getTranslation('generateTravelPlans', language) },
     { icon: MapPin, title: getTranslation('localInsights', language), description: getTranslation('discoverHiddenGems', language) },
     { icon: Calendar, title: getTranslation('smartScheduling', language), description: getTranslation('optimizeItinerary', language) },
     { icon: Users, title: getTranslation('personalizedExperience', language), description: getTranslation('tailoredRecommendations', language) }
-  ]);
+  ];
   
   // AI Questionnaire Form State
   const [aiFormData, setAiFormData] = useState({
@@ -40,26 +40,105 @@ function AIPlanner() {
     interests: ['sightseeing', 'local cuisine'],
     accommodation: 'hotel'
   });
-  const [selectedInterests, setSelectedInterests] = useState(['sightseeing', 'local cuisine']);
-  
-  const availableInterests = [
-    'sightseeing',
-    'adventure',
-    'local cuisine',
-    'cultural experiences',
-    'beaches',
-    'hiking',
-    'shopping',
-    'nightlife',
-    'museums',
-    'photography'
-  ];
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    start_date: '',
+    end_date: ''
+  });
+  const [itemFormData, setItemFormData] = useState({
+    title: '',
+    description: '',
+    date: '',
+    time: ''
+  });
+  const [tripItems, setTripItems] = useState([]);
+  const [editingPlanId, setEditingPlanId] = useState(null);
+  const [contactFormData, setContactFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    subject: '',
+    message: ''
+  });
+  const [contactLoading, setContactLoading] = useState(false);
+  const [contactMessage, setContactMessage] = useState('');
+  const [showSessionModal, setShowSessionModal] = useState(false);
+  const [sessionMessage, setSessionMessage] = useState('');
 
-  useEffect(() => {
-    fetchTripPlans();
-  }, []);
+  const handleAiInputChange = (e) => {
+    const { name, value } = e.target;
+    setAiFormData(prev => ({ ...prev, [name]: value }));
+  };
 
-  const fetchTripPlans = async () => {
+  const handleAuthError = (data, response) => {
+    const detail = data && data.detail ? String(data.detail).toLowerCase() : '';
+    const isAuthError = (response && response.status === 401) || detail.includes('invalid or expired token') || detail.includes('token is invalid') || detail.includes('token expired');
+    if (isAuthError) {
+      // Clear stored token and notify user, then open auth popup
+      try {
+        localStorage.removeItem('token');
+      } catch (e) {
+        console.warn('Unable to clear token from localStorage:', e);
+      }
+      const msg = getTranslation('sessionExpired', language) || 'Session expired. Please log in again.';
+      setSessionMessage(msg);
+      setShowSessionModal(true);
+      // Auto-redirect to login after short delay; user can also click the modal button
+      setTimeout(() => { window.dispatchEvent(new CustomEvent('openAuth', { detail: { mode: 'login' } })); }, 1500);
+      return true;
+    }
+    return false;
+  };
+
+  const handleGenerateWithAI = async (e) => {
+    e && e.preventDefault();
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setFormMessage(getTranslation('loginError', language));
+      return;
+    }
+
+    // minimal validation
+    if (!aiFormData.destination || !aiFormData.duration_days) {
+      setFormMessage(getTranslation('aiFormRequired', language) || 'Destination and duration are required');
+      return;
+    }
+
+    setGeneratingPlan(true);
+    setFormMessage('');
+
+    try {
+      const response = await fetch(`${API_BASE}/trip-plans/generate-with-ai`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ ...aiFormData, auto_save: true })
+      });
+
+      const data = await response.json();
+      if (handleAuthError(data, response)) return;
+      if (response.ok && data.data) {
+        // add saved plan to plans list
+        setTripPlans(prev => [data.data, ...prev]);
+        setFormMessage(getTranslation('tripPlanCreated', language) || 'Trip plan created successfully');
+        // reset ai form
+        setAiFormData({ destination: '', duration_days: '5', start_date: '', budget: 'moderate', travel_style: 'balanced', group_size: '2', interests: ['sightseeing', 'local cuisine'], accommodation: 'hotel' });
+        setTimeout(() => setFormMessage(''), 3000);
+      } else {
+        setFormMessage(data.detail || data.error || getTranslation('messageError', language));
+      }
+    } catch (err) {
+      console.error('AI generate error', err);
+      setFormMessage(getTranslation('messageError', language));
+    } finally {
+      setGeneratingPlan(false);
+    }
+  };
+
+  async function fetchTripPlans() {
     try {
       // For demo, assume user is logged in with token in localStorage
       const token = localStorage.getItem('token');
@@ -75,6 +154,7 @@ function AIPlanner() {
         }
       });
       const data = await response.json();
+      if (handleAuthError(data, response)) return;
       if (data.data && Array.isArray(data.data)) {
         setTripPlans(data.data);
       }
@@ -83,7 +163,14 @@ function AIPlanner() {
     } finally {
       setLoading(false);
     }
-  };
+  }
+
+  /* eslint-disable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
+  useEffect(() => {
+    // Load saved trip plans on mount.
+    fetchTripPlans();
+  }, []);
+  /* eslint-enable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -245,6 +332,7 @@ END:VCALENDAR`;
         }
       });
       const data = await response.json();
+      if (handleAuthError(data, response)) return;
       if (response.ok) {
         setTripPlans(tripPlans.filter(plan => plan.id !== planId));
       } else {
@@ -332,6 +420,7 @@ END:VCALENDAR`;
         })
       });
       const data = await response.json();
+      if (handleAuthError(data, response)) return;
       if (data.message || data.success) {
         const successMessage = editingPlanId 
           ? (getTranslation('tripPlanUpdated', language) || 'Trip plan updated successfully!')
@@ -376,6 +465,54 @@ END:VCALENDAR`;
             </div>
           </div>
         </header>
+
+        {/* AI GENERATOR FORM */}
+        <section className="ai-generator-section">
+          <div className="container">
+            <div className="ai-generator-card">
+              <h2>{getTranslation('aiPlanner', language)}</h2>
+              <p>{getTranslation('aiPlannerIntro', language) || 'Tell us the destination and duration, and we will generate an itinerary for you.'}</p>
+              <form className="ai-generator-form" onSubmit={handleGenerateWithAI}>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="ai-destination">{getTranslation('destination', language) || 'Destination'}</label>
+                    <input id="ai-destination" name="destination" value={aiFormData.destination} onChange={handleAiInputChange} placeholder={getTranslation('destination', language) || 'e.g., Kyoto, Japan'} required />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="ai-duration">{getTranslation('durationDays', language) || 'Duration (days)'}</label>
+                    <input id="ai-duration" name="duration_days" type="number" min="1" value={aiFormData.duration_days} onChange={handleAiInputChange} required />
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="ai-budget">{getTranslation('budget', language) || 'Budget'}</label>
+                    <select id="ai-budget" name="budget" value={aiFormData.budget} onChange={handleAiInputChange}>
+                      <option value="budget">{getTranslation('budgetLow', language) || 'Budget'}</option>
+                      <option value="moderate">{getTranslation('budgetMedium', language) || 'Moderate'}</option>
+                      <option value="luxury">{getTranslation('budgetHigh', language) || 'Luxury'}</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="ai-travel-style">{getTranslation('travelStyle', language) || 'Travel style'}</label>
+                    <select id="ai-travel-style" name="travel_style" value={aiFormData.travel_style} onChange={handleAiInputChange}>
+                      <option value="balanced">{getTranslation('balanced', language) || 'Balanced'}</option>
+                      <option value="adventure">{getTranslation('adventure', language) || 'Adventure'}</option>
+                      <option value="relaxation">{getTranslation('relaxation', language) || 'Relaxation'}</option>
+                      <option value="cultural">{getTranslation('cultural', language) || 'Cultural'}</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-actions">
+                  <button type="submit" className="btn-generate" disabled={generatingPlan}>
+                    {generatingPlan ? (getTranslation('generating', language) || 'Generating...') : (getTranslation('generateAndSave', language) || 'Generate & Save')}
+                  </button>
+                  {formMessage && <span className="ai-form-message">{formMessage}</span>}
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
 
         {/* FEATURES SECTION */}
         <section className="features-section">
@@ -514,8 +651,8 @@ END:VCALENDAR`;
                       </div>
                     )}
 
-                    {/* Add Item Form */}
-                    <form className="add-item-form" onSubmit={handleAddItem}>
+                    {/* Add Item Section */}
+                    <div className="add-item-form">
                       <div className="form-group">
                         <input
                           type="text"
@@ -557,12 +694,13 @@ END:VCALENDAR`;
                         />
                       </div>
                       <button 
-                        type="submit" 
+                        type="button" 
                         className="btn-add-item"
+                        onClick={handleAddItem}
                       >
                         <Plus size={16} /> {getTranslation('addActivity', language) || 'Add Activity'}
                       </button>
-                    </form>
+                    </div>
                   </div>
 
                   <div className="form-actions">
@@ -786,6 +924,19 @@ END:VCALENDAR`;
       </main>
 
       <Footer />
+      <SessionExpiredModal
+        isOpen={showSessionModal}
+        message={sessionMessage}
+        onClose={() => setShowSessionModal(false)}
+        onLogin={() => {
+          try {
+            localStorage.removeItem('token');
+          } catch (e) {
+            console.warn('Unable to clear token from localStorage:', e);
+          }
+          window.dispatchEvent(new CustomEvent('openAuth', { detail: { mode: 'login' } }));
+        }}
+      />
     </>
   );
 }

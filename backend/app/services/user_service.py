@@ -5,14 +5,13 @@ from sqlalchemy.orm import Session
 from app.models.user import User
 from app.utils.password_handler import hash_password, verify_password
 from app.utils.validators import validate_email, validate_password
-from app.schemas import UserCreate, UserLogin
 
 
 class UserService:
     """Service for user operations"""
     
     @staticmethod
-    def create_user(db: Session, user_data: UserCreate) -> User:
+    def create_user(db: Session, user_data: dict) -> User:
         """
         Create a new user
         
@@ -26,25 +25,25 @@ class UserService:
         Raises:
             ValueError: If user already exists or validation fails
         """
-        # Validate email
-        if not validate_email(user_data.email):
+        email = user_data.get("email")
+        name = user_data.get("name")
+        password = user_data.get("password")
+
+        if not validate_email(email):
             raise ValueError("Invalid email format")
-        
-        # Validate password strength
-        is_valid, error_msg = validate_password(user_data.password)
+
+        is_valid, error_msg = validate_password(password)
         if not is_valid:
             raise ValueError(error_msg)
-        
-        # Check if user already exists
-        existing_user = db.query(User).filter(User.email == user_data.email).first()
+
+        existing_user = db.query(User).filter(User.email == email).first()
         if existing_user:
             raise ValueError("Email already registered")
-        
-        # Create new user
+
         user = User(
-            email=user_data.email,
-            name=user_data.name,
-            password_hash=hash_password(user_data.password)
+            email=email,
+            name=name,
+            password_hash=hash_password(password)
         )
         db.add(user)
         db.commit()
@@ -114,27 +113,23 @@ class UserService:
         Returns:
             User object (existing or newly created)
         """
-        # Try to find user by google_id first
         user = db.query(User).filter(User.google_id == google_id).first()
         if user:
             return user
-        
-        # Check if email already exists
+
         user = db.query(User).filter(User.email == email).first()
         if user:
-            # Update google_id if not set
             if not user.google_id:
                 user.google_id = google_id
                 db.commit()
                 db.refresh(user)
             return user
-        
-        # Create new user with google OAuth
+
         user = User(
             email=email,
             name=name,
             google_id=google_id,
-            password_hash=None  # No password for OAuth users
+            password_hash=None
         )
         db.add(user)
         db.commit()

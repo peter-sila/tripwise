@@ -1202,6 +1202,152 @@
   }
 }
 
+/* ====== CLEAN & MODERN ADJUSTMENTS ====== */
+/* Page base */
+.aiplanner-page {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  background: linear-gradient(180deg, #f7fafc 0%, #ffffff 100%);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.container { padding-left: 24px; padding-right: 24px; }
+
+/* Hero tweaks */
+.page-header { padding: 64px 0; border-bottom-left-radius: 24px; border-bottom-right-radius: 24px; }
+.page-header h1 { font-size: 40px; letter-spacing: -0.5px; }
+.page-header p { max-width: 800px; margin: 10px auto 0; }
+
+/* AI card */
+.ai-generator-card {
+  background: white;
+  border-radius: 14px;
+  padding: 28px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(15,23,42,0.04);
+  max-width: 980px;
+  margin: 0 auto 28px;
+}
+
+.ai-generator-form .form-group input,
+.ai-generator-form .form-group select {
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+/* Generate button (used in JSX as `btn-generate`) */
+.btn-generate,
+.generate-btn {
+  padding: 12px 20px;
+  background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 20px rgba(29,78,216,0.12);
+}
+
+.btn-generate[disabled], .generate-btn[disabled] { opacity: 0.6; cursor: not-allowed; box-shadow: none; }
+
+/* Inline AI form message */
+.ai-form-message {
+  margin-left: 16px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Features grid cleanup */
+.feature-card { padding: 26px; border-radius: 12px; }
+.feature-icon { width: 56px; height: 56px; }
+
+/* Create plan card */
+.create-plan-card { padding: 20px; border-radius: 12px; }
+
+/* Plan cards */
+.plan-card { padding: 20px; border-radius: 12px; transition: transform 0.18s ease, box-shadow 0.18s ease; }
+.plan-card:hover { transform: translateY(-6px); box-shadow: 0 14px 30px rgba(2,6,23,0.08); }
+
+/* Plan actions stacked into compact buttons */
+.plan-actions { flex-direction: row; gap: 8px; }
+.btn-edit-plan, .btn-delete-plan, .btn-add-calendar { padding: 10px 12px; border-radius: 10px; font-size: 13px; }
+
+/* Create plan form improvements */
+.create-plan-form input, .create-plan-form textarea, .contact-form input, .contact-form textarea { border-radius: 10px; }
+
+/* Small utility */
+.muted { color: var(--text-secondary); }
+
+@media (max-width: 768px) {
+  .ai-generator-card { padding: 18px; }
+  .page-header { padding: 40px 0; }
+}
+
+
+/* ====== SESSION EXPIRED MODAL ====== */
+.session-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 9998;
+}
+.session-modal {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  width: 90%;
+  max-width: 420px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  z-index: 9999;
+  overflow: hidden;
+}
+.session-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border-color);
+}
+.session-modal-body {
+  padding: 18px;
+  color: var(--text-primary);
+}
+.session-modal-footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 12px 18px 18px;
+}
+.session-modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+.session-modal-btn {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: white;
+  cursor: pointer;
+}
+.session-modal-btn-primary {
+  background: linear-gradient(135deg, var(--primary-color) 0%, #1d4ed8 100%);
+  color: white;
+  border: none;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+
 @media (max-width: 480px) {
   .planner-form {
     padding: 20px;

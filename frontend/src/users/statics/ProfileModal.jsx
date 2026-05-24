@@ -19,12 +19,15 @@ export default function ProfileModal({ isOpen, onClose, user, onLogout }) {
     confirmPassword: '',
   });
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => {
     if (user?.name) {
+      /* eslint-disable react-hooks/set-state-in-effect */
       setFormData(prev => ({
         ...prev,
         name: user.name
       }));
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [user]);
 

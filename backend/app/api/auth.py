@@ -3,64 +3,53 @@ Authentication API routes
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from datetime import timedelta
-from pydantic import BaseModel
 import base64
 import json
 from app.database import get_db
-from app.schemas import UserCreate, UserLogin, Token, UserResponse
 from app.services.user_service import UserService
 from app.utils.jwt_handler import create_access_token
 from app.middleware.auth import get_current_user
 from app.models.user import User
-from config.settings import settings
+from app.utils.response_formatter import model_to_dict
+
+
+def serialize_user(user: User) -> dict:
+    user_data = model_to_dict(user)
+    user_data['is_admin'] = user.is_admin
+    user_data['is_active'] = user.is_active
+    return user_data
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
-# Request models
-class GoogleTokenRequest(BaseModel):
-    """Google OAuth token request"""
-    id_token: str
-    
-    
-class GoogleAuthResponse(BaseModel):
-    """Google OAuth response"""
-    access_token: str
-    token_type: str
-    user: UserResponse
-
-
-@router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
-async def register(user_data: UserCreate, db: Session = Depends(get_db)):
+@router.post("/register", response_model=dict, status_code=status.HTTP_201_CREATED)
+async def register(user_data: dict, db: Session = Depends(get_db)):
     """
     Register a new user
     
     Request body:
         - email: User email
         - name: User full name
-        - password: User password (min 8 chars, uppercase, lowercase, numbers)
+        - password: User password
     
     Returns:
         Access token and user data
     """
     try:
         user = UserService.create_user(db, user_data)
-        
-        # Create access token
         access_token = create_access_token(data={"sub": user.id})
-        
         return {
+            "success": True,
             "access_token": access_token,
             "token_type": "bearer",
-            "user": UserResponse.model_validate(user)
+            "user": serialize_user(user)
         }
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.post("/login", response_model=Token)
-async def login(login_data: UserLogin, db: Session = Depends(get_db)):
+@router.post("/login", response_model=dict)
+async def login(login_data: dict, db: Session = Depends(get_db)):
     """
     Login user with email and password
     
@@ -72,21 +61,21 @@ async def login(login_data: UserLogin, db: Session = Depends(get_db)):
         Access token and user data
     """
     try:
-        user = UserService.authenticate_user(db, login_data.email, login_data.password)
-        
-        # Create access token
+        email = login_data.get("email")
+        password = login_data.get("password")
+        user = UserService.authenticate_user(db, email, password)
         access_token = create_access_token(data={"sub": user.id})
-        
         return {
+            "success": True,
             "access_token": access_token,
             "token_type": "bearer",
-            "user": UserResponse.model_validate(user)
+            "user": serialize_user(user)
         }
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get("/me", response_model=dict)
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
     """
     Get current authenticated user information
@@ -94,7 +83,10 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
     Returns:
         Current user data
     """
-    return UserResponse.model_validate(current_user)
+    return {
+        "success": True,
+        "data": serialize_user(current_user)
+    }
 
 
 @router.get("/verify", response_model=dict)
@@ -106,14 +98,15 @@ async def verify_token(current_user: User = Depends(get_current_user)):
         Success message and user data
     """
     return {
+        "success": True,
         "valid": True,
         "message": "Token is valid",
-        "user": UserResponse.model_validate(current_user)
+        "user": serialize_user(current_user)
     }
 
 
-@router.post("/google", response_model=GoogleAuthResponse, status_code=status.HTTP_200_OK)
-async def google_oauth(token_request: GoogleTokenRequest, db: Session = Depends(get_db)):
+@router.post("/google-oauth", response_model=dict)
+async def google_oauth(token_request: dict, db: Session = Depends(get_db)):
     """
     Authenticate user with Google OAuth token
     
@@ -124,62 +117,59 @@ async def google_oauth(token_request: GoogleTokenRequest, db: Session = Depends(
         Access token and user data
     """
     try:
-        # Decode and validate Google token
-        # Note: In production, verify the signature with Google's public keys
-        # For development, we decode and validate basic structure
-        
-        token_parts = token_request.id_token.split('.')
+        id_token = token_request.get("id_token")
+        if not id_token:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Missing id_token"
+            )
+
+        token_parts = id_token.split('.')
         if len(token_parts) != 3:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token format"
             )
-        
-        # Decode the payload (second part)
-        # Add padding if necessary
+
         payload_part = token_parts[1]
         padding = 4 - len(payload_part) % 4
         if padding != 4:
             payload_part += '=' * padding
-        
+
         try:
             payload = json.loads(
                 base64.urlsafe_b64decode(payload_part)
             )
-        except Exception as e:
+        except Exception:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token payload"
             )
-        
-        # Extract user information
+
         google_id = payload.get('sub')
         email = payload.get('email')
         name = payload.get('name', 'Google User')
-        
+
         if not google_id or not email:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Missing required fields in token"
             )
-        
-        # Get or create user
+
         user = UserService.get_or_create_google_user(
             db,
             google_id=google_id,
             email=email,
             name=name
         )
-        
-        # Create access token
+
         access_token = create_access_token(data={"sub": user.id})
-        
         return {
+            "success": True,
             "access_token": access_token,
             "token_type": "bearer",
-            "user": UserResponse.model_validate(user)
+            "user": serialize_user(user)
         }
-        
     except HTTPException:
         raise
     except Exception as e:
@@ -208,38 +198,32 @@ async def update_user_profile(
     """
     try:
         from app.utils.password_handler import verify_password, hash_password
-        
-        # Update name if provided
+
         if 'name' in profile_data and profile_data['name']:
             current_user.name = profile_data['name']
-        
-        # Handle password change
+
         if profile_data.get('newPassword'):
             current_password = profile_data.get('currentPassword')
-            
             if not current_password:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Current password required to change password"
                 )
-            
             if not verify_password(current_password, current_user.password_hash):
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Current password is incorrect"
                 )
-            
             current_user.password_hash = hash_password(profile_data['newPassword'])
-        
+
         db.commit()
         db.refresh(current_user)
-        
+
         return {
             "success": True,
             "message": "Profile updated successfully",
-            "data": UserResponse.model_validate(current_user)
+            "data": serialize_user(current_user)
         }
-        
     except HTTPException:
         raise
     except Exception as e:

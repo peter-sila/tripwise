@@ -15,10 +15,9 @@
  * @returns {JSX.Element} Map component
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { MapPin, X } from 'lucide-react';
-import { useLanguage } from '../context/LanguageContext';
-import { getTranslation } from '../utils/translations';
+import { getSafeImageUrl } from './utils/imageUtils';
 import './css/mapview.css';
 
 /**
@@ -26,12 +25,78 @@ import './css/mapview.css';
  * Falls back to list view if map library not available
  */
 const MapView = ({ destinations = [], onMarkerClick = null, onViewDetails = null }) => {
-  const { language } = useLanguage();
   const mapContainer = useRef(null);
   const map = useRef(null);
   const [mapReady, setMapReady] = useState(false);
   const [selectedMarker, setSelectedMarker] = useState(null);
   const markersRef = useRef([]);
+
+  /**
+   * Add markers for all destinations to the map
+   * Each marker is clickable and shows destination info in a popup
+   */
+  const addDestinationMarkers = useCallback((mapInstance) => {
+    // Clear existing markers
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+
+    if (!destinations || destinations.length === 0) return;
+
+    destinations.forEach((destination) => {
+      // Use mock coordinates based on destination ID
+      // In production, coordinates should come from database
+      const lat = -0.023559 + (destination.id * 0.5) % 3;
+      const lng = 37.906193 + (destination.id * 0.5) % 3;
+
+      try {
+        // Create marker with custom popup
+        const marker = window.L.marker([lat, lng])
+          .addTo(mapInstance)
+          .bindPopup(`
+            <div class="map-popup">
+              <h4>${destination.name}</h4>
+              <p>${destination.location || 'Kenya'}</p>
+              ${destination.image_url ? `<img src="${getSafeImageUrl(destination.image_url)}" alt="${destination.name}" onerror="this.onerror=null;this.src='https://via.placeholder.com/200x120?text=No+Image'" />` : ''}
+              <button class="popup-btn view-details-popup-btn" data-id="${destination.id}">View Details</button>
+            </div>
+          `);
+
+        // Handle marker click
+        marker.on('click', () => {
+          setSelectedMarker(destination);
+          if (onMarkerClick) {
+            onMarkerClick(destination);
+          }
+        });
+
+        // Handle popup open to attach event listener to button
+        marker.on('popupopen', () => {
+          const button = document.querySelector('.view-details-popup-btn');
+          if (button) {
+            button.onclick = () => {
+              if (onViewDetails) {
+                onViewDetails(destination);
+              }
+            };
+          }
+        });
+
+        markersRef.current.push(marker);
+      } catch (error) {
+        console.error('Failed to add marker:', error);
+      }
+    });
+
+    // Auto-fit map bounds to show all markers
+    if (markersRef.current.length > 0) {
+      try {
+        const group = window.L.featureGroup(markersRef.current);
+        mapInstance.fitBounds(group.getBounds(), { padding: [50, 50] });
+      } catch (error) {
+        console.error('Failed to fit bounds:', error);
+      }
+    }
+  }, [destinations, onMarkerClick, onViewDetails]);
 
   /**
    * Initialize Leaflet map on component mount
@@ -90,74 +155,6 @@ const MapView = ({ destinations = [], onMarkerClick = null, onViewDetails = null
       }
     };
   }, []);
-
-  /**
-   * Add markers for all destinations to the map
-   * Each marker is clickable and shows destination info in a popup
-   */
-  const addDestinationMarkers = (mapInstance) => {
-    // Clear existing markers
-    markersRef.current.forEach(marker => marker.remove());
-    markersRef.current = [];
-
-    if (!destinations || destinations.length === 0) return;
-
-    destinations.forEach((destination) => {
-      // Use mock coordinates based on destination ID
-      // In production, coordinates should come from database
-      const lat = -0.023559 + (destination.id * 0.5) % 3;
-      const lng = 37.906193 + (destination.id * 0.5) % 3;
-
-      try {
-        // Create marker with custom popup
-        const marker = window.L.marker([lat, lng])
-          .addTo(mapInstance)
-          .bindPopup(`
-            <div class="map-popup">
-              <h4>${destination.name}</h4>
-              <p>${destination.location || 'Kenya'}</p>
-              ${destination.image_url ? `<img src="${destination.image_url}" alt="${destination.name}" />` : ''}
-              <button class="popup-btn view-details-popup-btn" data-id="${destination.id}">View Details</button>
-            </div>
-          `);
-
-        // Handle marker click
-        marker.on('click', () => {
-          setSelectedMarker(destination);
-          if (onMarkerClick) {
-            onMarkerClick(destination);
-          }
-        });
-
-        // Handle popup open to attach event listener to button
-        marker.on('popupopen', () => {
-          const button = document.querySelector('.view-details-popup-btn');
-          if (button) {
-            button.onclick = () => {
-              if (onViewDetails) {
-                onViewDetails(destination);
-              }
-            };
-          }
-        });
-
-        markersRef.current.push(marker);
-      } catch (error) {
-        console.error('Failed to add marker:', error);
-      }
-    });
-
-    // Auto-fit map bounds to show all markers
-    if (markersRef.current.length > 0) {
-      try {
-        const group = window.L.featureGroup(markersRef.current);
-        mapInstance.fitBounds(group.getBounds(), { padding: [50, 50] });
-      } catch (error) {
-        console.error('Failed to fit bounds:', error);
-      }
-    }
-  };
-
   /**
    * Update markers when destinations change
    */
@@ -165,7 +162,7 @@ const MapView = ({ destinations = [], onMarkerClick = null, onViewDetails = null
     if (mapReady && map.current) {
       addDestinationMarkers(map.current);
     }
-  }, [destinations, mapReady]);
+  }, [mapReady, addDestinationMarkers]);
 
   /**
    * Handle map container resize

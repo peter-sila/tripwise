@@ -5,14 +5,13 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import List, Optional
 from app.models.destination import Destination
-from app.schemas import DestinationCreate, DestinationSearch
 
 
 class DestinationService:
     """Service for destination operations"""
     
     @staticmethod
-    def create_destination(db: Session, destination_data: DestinationCreate) -> Destination:
+    def create_destination(db: Session, destination_data: dict) -> Destination:
         """
         Create a new destination
         
@@ -24,11 +23,11 @@ class DestinationService:
             Created destination object
         """
         destination = Destination(
-            name=destination_data.name,
-            description=destination_data.description,
-            location=destination_data.location,
-            image_url=destination_data.image_url,
-            category=destination_data.category
+            name=destination_data.get("name"),
+            description=destination_data.get("description"),
+            location=destination_data.get("location"),
+            image_url=destination_data.get("image_url"),
+            category=destination_data.get("category")
         )
         db.add(destination)
         db.commit()
@@ -65,22 +64,24 @@ class DestinationService:
         return db.query(Destination).offset(offset).limit(limit).all()
     
     @staticmethod
-    def search_destinations(db: Session, search_params: DestinationSearch) -> List[Destination]:
+    def search_destinations(db: Session, query_text: str = None, category: str = None, limit: int = 10, offset: int = 0) -> List[Destination]:
         """
         Search destinations by query and/or category
         
         Args:
             db: Database session
-            search_params: Search parameters
+            query_text: Search query text
+            category: Filter category
+            limit: Number of results to return
+            offset: Number of results to skip
         
         Returns:
             List of matching destinations
         """
         query = db.query(Destination)
         
-        # Apply text search
-        if search_params.query:
-            search_term = f"%{search_params.query}%"
+        if query_text:
+            search_term = f"%{query_text}%"
             query = query.filter(
                 or_(
                     Destination.name.ilike(search_term),
@@ -89,13 +90,10 @@ class DestinationService:
                 )
             )
         
-        # Apply category filter
-        if search_params.category:
-            query = query.filter(Destination.category == search_params.category)
+        if category:
+            query = query.filter(Destination.category == category)
         
-        # Apply pagination
-        query = query.offset(search_params.offset).limit(search_params.limit)
-        
+        query = query.offset(offset).limit(limit)
         return query.all()
     
     @staticmethod

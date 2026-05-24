@@ -88,43 +88,6 @@ function Reviews() {
     { value: '3', label: getTranslation('threePlus', language) }
   ];
 
-  // Effect Hook 1: Fetch destinations on component mount
-  // Runs once when component first renders (empty dependency array)
-  useEffect(() => {
-    fetchDestinations();
-  }, []);
-
-  /**
-   * Effect Hook 2: Fetch reviews when destination changes
-   * Automatically loads reviews when user selects a different destination
-   * 
-   * Dependency: selectedDestination - triggers fetch when destination ID changes
-   */
-  useEffect(() => {
-    if (selectedDestination) {
-      fetchReviews(selectedDestination.id);
-    }
-  }, [selectedDestination]);
-
-  /**
-   * Effect Hook 3: Handle destination pre-selection from navigation state
-   * When navigating from DestinationDetails page, sets that destination as selected
-   * and automatically opens the review form
-   * 
-   * Dependencies: destinations, location - when destinations are fetched or location state changes
-   */
-  useEffect(() => {
-    if (destinations.length > 0 && location.state?.destinationId) {
-      // Find the destination matching the ID from location state
-      const destination = destinations.find(d => d.id == location.state.destinationId);
-      if (destination) {
-        // Set it as selected and open review form
-        setSelectedDestination(destination);
-        setShowReviewForm(true);
-      }
-    }
-  }, [destinations, location.state?.destinationId]);
-
   /**
    * Fetch All Destinations
    * 
@@ -135,7 +98,7 @@ function Reviews() {
    * @async
    * @returns {Promise<void>}
    */
-  const fetchDestinations = async () => {
+  async function fetchDestinations() {
     try {
       // Request all destinations from API
       const response = await fetch(`${API_BASE}/destinations`);
@@ -152,7 +115,7 @@ function Reviews() {
     } catch (error) {
       console.error('Error fetching destinations:', error);
     }
-  };
+  }
 
   /**
    * Fetch Reviews for Selected Destination
@@ -165,7 +128,7 @@ function Reviews() {
    * @param {number} destinationId - ID of destination to fetch reviews for
    * @returns {Promise<void>}
    */
-  const fetchReviews = async (destinationId) => {
+  async function fetchReviews(destinationId) {
     try {
       // Request reviews for specific destination
       const response = await fetch(`${API_BASE}/reviews?destination_id=${destinationId}`);
@@ -184,12 +147,51 @@ function Reviews() {
       // Mark loading as complete
       setLoading(false);
     }
-  };
+  }
+
+  /* eslint-disable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
+  // Effect Hook 1: Fetch destinations on component mount
+  // Runs once when component first renders (empty dependency array)
+  useEffect(() => {
+    fetchDestinations();
+  }, []);
+  /* eslint-enable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
 
   /**
-   * Validate Review Form
-   * Validates all form fields before submission.
+   * Effect Hook 2: Fetch reviews when destination changes
+   * Automatically loads reviews when user selects a different destination
+   * 
+   * Dependency: selectedDestination - triggers fetch when destination ID changes
    */
+  /* eslint-disable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (selectedDestination) {
+      fetchReviews(selectedDestination.id);
+    }
+  }, [selectedDestination]);
+  /* eslint-enable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
+
+  /**
+   * Effect Hook 3: Handle destination pre-selection from navigation state
+   * When navigating from DestinationDetails page, sets that destination as selected
+   * and automatically opens the review form
+   * 
+   * Dependencies: destinations, location - when destinations are fetched or location state changes
+   */
+  /* eslint-disable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (destinations.length > 0 && location.state?.destinationId) {
+      // Find the destination matching the ID from location state
+      const destination = destinations.find(d => d.id == location.state.destinationId);
+      if (destination) {
+        // Set it as selected and open review form
+        setSelectedDestination(destination);
+        setShowReviewForm(true);
+      }
+    }
+  }, [destinations, location.state?.destinationId]);
+  /* eslint-enable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
+
   const validateForm = (data) => {
     const errors = {};
     if (!data.rating || data.rating < 1 || data.rating > 5) {
@@ -331,18 +333,19 @@ function Reviews() {
       
       const data = await response.json();
       
-      if (response.ok && data.token) {
-        // Save token and update auth state
-        localStorage.setItem('token', data.token);
+      if (response.ok && data.access_token) {
+        // Save token and user info, update auth state
+        localStorage.setItem('token', data.access_token);
+        if (data.user) localStorage.setItem('userInfo', JSON.stringify(data.user));
         setIsAuthenticated(true);
         setLoginData({ email: '', password: '' });
         setLoginError('');
-        
+
         // Close login form and open review form
         setShowLoginForm(false);
         setShowReviewForm(true);
       } else {
-        setLoginError(data.message || getTranslation('loginError', language));
+        setLoginError(data.detail || data.message || getTranslation('loginError', language));
       }
     } catch (error) {
       console.error('Login error:', error);
