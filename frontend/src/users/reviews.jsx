@@ -564,7 +564,16 @@ function Reviews() {
 
                     {/* Review Actions - Helpful button and other interactions */}
                     <div className="review-actions">
-                      <button className="action-btn">
+                      <button 
+                        className="action-btn"
+                        onClick={() => {
+                          if (!isAuthenticated) {
+                            setShowLoginForm(true);
+                          }
+                        }}
+                        disabled={!isAuthenticated}
+                        title={isAuthenticated ? '' : getTranslation('loginRequired', language)}
+                      >
                         <ThumbsUp size={16} /> {getTranslation('helpful', language)}
                       </button>
                     </div>

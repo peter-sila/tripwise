@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 import base64
 import json
+import requests
 from app.database import get_db
 from app.services.user_service import UserService
 from app.utils.jwt_handler import create_access_token
@@ -37,7 +38,7 @@ async def register(user_data: dict, db: Session = Depends(get_db)):
     """
     try:
         user = UserService.create_user(db, user_data)
-        access_token = create_access_token(data={"sub": user.id})
+        access_token = create_access_token(data={"sub": str(user.id)})
         return {
             "success": True,
             "access_token": access_token,
@@ -64,7 +65,7 @@ async def login(login_data: dict, db: Session = Depends(get_db)):
         email = login_data.get("email")
         password = login_data.get("password")
         user = UserService.authenticate_user(db, email, password)
-        access_token = create_access_token(data={"sub": user.id})
+        access_token = create_access_token(data={"sub": str(user.id)})
         return {
             "success": True,
             "access_token": access_token,
@@ -105,46 +106,68 @@ async def verify_token(current_user: User = Depends(get_current_user)):
     }
 
 
-@router.post("/google-oauth", response_model=dict)
+@router.post("/google", response_model=dict)
+# @router.post("/google-oauth", response_model=dict)
 async def google_oauth(token_request: dict, db: Session = Depends(get_db)):
     """
-    Authenticate user with Google OAuth token
+    Authenticate user with Google OAuth credentials
     
     Request body:
         - id_token: Google ID token from frontend
+        - access_token: Google OAuth access token from frontend
     
     Returns:
         Access token and user data
     """
     try:
         id_token = token_request.get("id_token")
-        if not id_token:
+        access_token_value = token_request.get('access_token')
+        if not id_token and not access_token_value:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Missing id_token"
+                detail="Missing id_token or access_token"
             )
 
-        token_parts = id_token.split('.')
-        if len(token_parts) != 3:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token format"
-            )
+        if access_token_value:
+            try:
+                userinfo_response = requests.get(
+                    'https://www.googleapis.com/oauth2/v3/userinfo',
+                    headers={'Authorization': f'Bearer {access_token_value}'},
+                    timeout=10
+                )
+                if userinfo_response.status_code != 200:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail='Invalid Google access token'
+                    )
+                payload = userinfo_response.json()
+            except requests.RequestException as e:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f'Failed to verify Google access token: {str(e)}'
+                )
+        else:
+            token_parts = id_token.split('.')
+            if len(token_parts) != 3:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid token format"
+                )
 
-        payload_part = token_parts[1]
-        padding = 4 - len(payload_part) % 4
-        if padding != 4:
-            payload_part += '=' * padding
+            payload_part = token_parts[1]
+            padding = 4 - len(payload_part) % 4
+            if padding != 4:
+                payload_part += '=' * padding
 
-        try:
-            payload = json.loads(
-                base64.urlsafe_b64decode(payload_part)
-            )
-        except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token payload"
-            )
+            try:
+                payload = json.loads(
+                    base64.urlsafe_b64decode(payload_part)
+                )
+            except Exception:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid token payload"
+                )
 
         google_id = payload.get('sub')
         email = payload.get('email')
@@ -163,7 +186,7 @@ async def google_oauth(token_request: dict, db: Session = Depends(get_db)):
             name=name
         )
 
-        access_token = create_access_token(data={"sub": user.id})
+        access_token = create_access_token(data={"sub": str(user.id)})
         return {
             "success": True,
             "access_token": access_token,

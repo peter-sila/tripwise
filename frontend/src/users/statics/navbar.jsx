@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Menu, X, Search, User, Globe, LogIn, LogOut, Loader, MapPin, Tag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { GoogleLogin } from '@react-oauth/google';
+import { useGoogleLogin } from '@react-oauth/google';
 import { useLanguage } from '../../context/LanguageContext';
 import { getTranslation } from '../../utils/translations';
 import { getSafeImageUrl } from '../utils/imageUtils';
@@ -17,7 +17,8 @@ const NavBar = () => {
   const [user, setUser] = useState(null);
   const [showAuth, setShowAuth] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
-  const [authData, setAuthData] = useState({ email: '', password: '', name: '' });
+  const [authData, setAuthData] = useState({ email: '', password: '', name: '', confirmPassword: '' });
+  const [authError, setAuthError] = useState(''); // For password mismatch errors
   const [showUserMenu, setShowUserMenu] = useState(false); // For user profile dropdown
   const [showLanguageMenu, setShowLanguageMenu] = useState(false); // For language selector
   const [showProfileModal, setShowProfileModal] = useState(false); // For profile modal
@@ -33,6 +34,21 @@ const NavBar = () => {
 
   async function fetchUser(token) {
     try {
+      // Verify token first to ensure session is valid
+      const verifyRes = await fetch(`${API_BASE}/auth/verify`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!verifyRes.ok) {
+        // Token invalid or expired
+        localStorage.removeItem('token');
+        localStorage.removeItem('userInfo');
+        setUser(null);
+        return;
+      }
+
+      // Fetch user info
       const response = await fetch(`${API_BASE}/auth/me`, {
         method: 'GET',
         headers: {
@@ -156,6 +172,14 @@ const NavBar = () => {
 
   const handleAuth = async (e) => {
     e.preventDefault();
+    setAuthError(''); // Clear previous errors
+    
+    // Validate passwords match in register mode
+    if (authMode === 'register' && authData.password !== authData.confirmPassword) {
+      setAuthError(getTranslation('passwordMismatch', language));
+      return;
+    }
+    
     const endpoint = authMode === 'login' ? '/auth/login' : '/auth/register';
     const body = authMode === 'login' 
       ? { email: authData.email, password: authData.password }
@@ -177,7 +201,8 @@ const NavBar = () => {
         localStorage.setItem('userInfo', JSON.stringify(data.user));
         setUser(data.user);
         setShowAuth(false);
-        setAuthData({ email: '', password: '', name: '' });
+        setAuthData({ email: '', password: '', confirmPassword: '', name: '' });
+        setAuthError('');
         alert(getTranslation('loginSuccess', language));
         
         // Redirect to admin dashboard if user is admin
@@ -190,15 +215,15 @@ const NavBar = () => {
       } 
       // Handle error response
       else if (data.detail) {
-        alert(`Error: ${data.detail}`);
+        setAuthError(`Error: ${data.detail}`);
       }
       // Handle other error messages
       else {
-        alert(data.message || 'Authentication failed');
+        setAuthError(data.message || 'Authentication failed');
       }
     } catch (error) {
       console.error('Auth error:', error);
-      alert(getTranslation('loginError', language));
+      setAuthError(getTranslation('loginError', language));
     }
   };
 
@@ -211,14 +236,23 @@ const NavBar = () => {
 
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
+      const requestBody = {};
+      if (credentialResponse.credential) {
+        requestBody.id_token = credentialResponse.credential;
+      } else if (credentialResponse.access_token) {
+        requestBody.access_token = credentialResponse.access_token;
+      } else {
+        console.error('Google auth success missing credential/access_token', credentialResponse);
+        alert(getTranslation('loginError', language));
+        return;
+      }
+
       const response = await fetch(`${API_BASE}/auth/google`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          id_token: credentialResponse.credential
-        })
+        body: JSON.stringify(requestBody)
       });
       const data = await response.json();
       
@@ -227,7 +261,8 @@ const NavBar = () => {
         localStorage.setItem('userInfo', JSON.stringify(data.user));
         setUser(data.user);
         setShowAuth(false);
-        setAuthData({ email: '', password: '', name: '' });
+        setAuthData({ email: '', password: '', name: '', confirmPassword: '' });
+        setAuthError('');
         alert(getTranslation('loginSuccess', language));
         
         // Redirect to admin dashboard if user is admin
@@ -250,6 +285,13 @@ const NavBar = () => {
     console.error('Google Login Failed');
     alert('Google Sign-In failed. Please try again.');
   };
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: handleGoogleSuccess,
+    onError: handleGoogleError,
+    flow: 'implicit',
+    scope: 'openid profile email'
+  });
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const toggleSearch = () => {
@@ -431,6 +473,16 @@ const NavBar = () => {
                 onChange={(e) => setAuthData({...authData, password: e.target.value})}
                 required
               />
+              {authMode === 'register' && (
+                <input
+                  type="password"
+                  placeholder={getTranslation('confirmPassword', language)}
+                  value={authData.confirmPassword}
+                  onChange={(e) => setAuthData({...authData, confirmPassword: e.target.value})}
+                  required
+                />
+              )}
+              {authError && <div className="auth-error-message">{authError}</div>}
               <button type="submit">{authMode === 'login' ? getTranslation('login', language) : getTranslation('register', language)}</button>
             </form>
 
@@ -440,12 +492,11 @@ const NavBar = () => {
             </div>
             <div className="google-signin-container">
               {import.meta.env.VITE_GOOGLE_CLIENT_ID && import.meta.env.VITE_GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID_HERE' ? (
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={handleGoogleError}
-                  text={authMode === 'login' ? 'signin_with' : 'signup_with'}
-                  locale={language}
-                />
+                <button type="button" className="google-login-btn" onClick={() => googleLogin()}>
+                  {authMode === 'login'
+                    ? getTranslation('signInWithGoogle', language)
+                    : getTranslation('signUpWithGoogle', language)}
+                </button>
               ) : (
                 <div className="google-placeholder">{getTranslation('googleNotConfigured', language) || 'Google Sign-In not configured'}</div>
               )}
@@ -453,7 +504,10 @@ const NavBar = () => {
 
             <button 
               className="auth-switch" 
-              onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
+              onClick={() => {
+                setAuthMode(authMode === 'login' ? 'register' : 'login');
+                setAuthError(''); // Clear errors when switching modes
+              }}
             >
               {authMode === 'login' ? getTranslation('needAccount', language) : getTranslation('haveAccount', language)}
             </button>
@@ -593,3 +647,4 @@ const NavBar = () => {
 };
 
 export default NavBar;
+

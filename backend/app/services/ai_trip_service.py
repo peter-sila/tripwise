@@ -100,10 +100,10 @@ class AITripService:
         """
         
         destination = preferences.get('destination', 'a beautiful destination')
-        duration = preferences.get('duration_days', 5)
+        duration = int(preferences.get('duration_days', 5))
         budget = preferences.get('budget', 'moderate')
         travel_style = preferences.get('travel_style', 'balanced')
-        group_size = preferences.get('group_size', 2)
+        group_size = int(preferences.get('group_size', 2))
         interests = preferences.get('interests', ['sightseeing', 'local cuisine', 'cultural experiences'])
         accommodation = preferences.get('accommodation', 'hotel')
         start_date_str = preferences.get('start_date')

@@ -60,6 +60,8 @@ function TravelTips() {
   // Data state
   const [tips, setTips] = useState([]);                   // All tips from API
   const [loading, setLoading] = useState(true);           // Loading indicator
+  const [user, setUser] = useState(null);
+  const [aiTips, setAiTips] = useState([]);
   
   // Filter state
   const [selectedCategory, setSelectedCategory] = useState(''); // Active category filter
@@ -81,22 +83,102 @@ function TravelTips() {
   async function fetchTips() {
     setLoading(true);
     try {
-      // Travel tips endpoint (placeholder for now)
-      // In a real implementation, this would return travel tips from the backend
-      const tips = [];
-      
-      // Update state with fetched tips or empty array
-      if (tips && tips.length > 0) {
-        setTips(tips);
-      } else {
-        setTips([]);
+      // Try to fetch travel tips from backend if endpoint exists
+      let fetchedTips = [];
+      try {
+        const resp = await fetch(`${API_BASE}/travel-tips`);
+        if (resp.ok) {
+          const d = await resp.json();
+          if (d.data && Array.isArray(d.data)) fetchedTips = d.data;
+        }
+      } catch (err) {
+        // endpoint may not exist; fallback to empty
       }
+
+      setTips(fetchedTips);
     } catch (error) {
       console.error('Error fetching tips:', error);
       setTips([]);
     } finally {
       // Mark loading as complete
       setLoading(false);
+    }
+  }
+
+  // Fetch current user and their trip plans to generate AI tips
+  async function fetchUserAndPlans() {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const resp = await fetch(`${API_BASE}/auth/me`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!resp.ok) return;
+      const data = await resp.json();
+      if (data.data) {
+        setUser(data.data);
+        // Fetch user's trip plans
+        const plansRes = await fetch(`${API_BASE}/trip-plans`, {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!plansRes.ok) return;
+        const plansData = await plansRes.json();
+        const plans = plansData.data || [];
+        // Try calling backend AI endpoint for richer tips
+        try {
+          const aiResp = await fetch(`${API_BASE}/ai/travel-tips`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ plans })
+          });
+
+          if (aiResp.ok) {
+            const aiData = await aiResp.json();
+            if (aiData.success && Array.isArray(aiData.data)) {
+              setAiTips(aiData.data);
+            }
+          } else {
+            // fallback to simple generation
+            const generated = [];
+            plans.forEach((plan) => {
+              const title = plan.title || 'My Trip';
+              const items = plan.items || [];
+              const locations = items.map(it => it.title).filter(Boolean);
+              const context = locations.length ? locations.join(', ') : title;
+              generated.push({
+                id: `ai-${plan.id}`,
+                title: `Tips for ${title}`,
+                content: `AI Tip: When visiting ${context}, consider local transport options, book popular attractions early, and try local cuisine.`,
+                category: 'ai'
+              });
+            });
+            setAiTips(generated);
+          }
+        } catch (err) {
+          console.error('AI endpoint error, falling back:', err);
+          const generated = [];
+          plans.forEach((plan) => {
+            const title = plan.title || 'My Trip';
+            const items = plan.items || [];
+            const locations = items.map(it => it.title).filter(Boolean);
+            const context = locations.length ? locations.join(', ') : title;
+            generated.push({
+              id: `ai-${plan.id}`,
+              title: `Tips for ${title}`,
+              content: `AI Tip: When visiting ${context}, consider local transport options, book popular attractions early, and try local cuisine.`,
+              category: 'ai'
+            });
+          });
+          setAiTips(generated);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching user/plans for AI tips:', err);
     }
   }
 
@@ -111,6 +193,12 @@ function TravelTips() {
     fetchTips();
   }, [selectedCategory]);
   /* eslint-enable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
+
+  // Initial mount: fetch tips and AI tips (if user logged in)
+  useEffect(() => {
+    fetchTips();
+    fetchUserAndPlans();
+  }, []);
 
   /**
    * Filter Tips Based on Category
@@ -131,9 +219,11 @@ function TravelTips() {
    * Shows all tips if 'All' category selected, otherwise filters by category.
    * Note: Backend already filters if category passed, this is redundant but kept for safety.
    */
+  // Merge AI-generated tips with community tips, AI tips appear first
+  const combinedTips = [...aiTips, ...tips];
   const filteredTips = selectedCategory === '' 
-    ? tips 
-    : tips.filter(tip => tip.category === selectedCategory);
+    ? combinedTips 
+    : combinedTips.filter(tip => tip.category === selectedCategory || (selectedCategory === 'ai' && tip.category === 'ai'));
 
   return (
     <>

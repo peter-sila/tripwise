@@ -141,11 +141,14 @@ export const translations = {
     register: 'Register',
     email: 'Email',
     password: 'Password',
+    confirmPassword: 'Confirm Password',
+    passwordMismatch: 'Passwords do not match',
     name: 'Name',
     haveAccount: 'Have an account? Login',
     needAccount: 'Need an account? Register',
     loginSuccess: 'Success! You are now logged in.',
     registerSuccess: 'Registration successful! Please log in now.',
+    sessionExpired: 'Session expired. Please log in again.',
     loginError: 'Failed to authenticate. Please try again.',
     
     // Destination Details
@@ -328,11 +331,14 @@ export const translations = {
     register: 'Registrarse',
     email: 'Correo Electrónico',
     password: 'Contraseña',
+    confirmPassword: 'Confirmar Contraseña',
+    passwordMismatch: 'Las contraseñas no coinciden',
     name: 'Nombre',
     haveAccount: '¿Tienes una cuenta? Inicia Sesión',
     needAccount: '¿Necesitas una cuenta? Regístrate',
     loginSuccess: '¡Éxito! Ahora has iniciado sesión.',
     registerSuccess: '¡Registro exitoso! Por favor inicia sesión ahora.',
+    sessionExpired: 'Sesión expirada. Por favor inicia sesión de nuevo.',
     loginError: 'Falló la autenticación. Por favor intenta de nuevo.',
     
     // Destination Details
@@ -494,11 +500,14 @@ export const translations = {
     register: 'Inscription',
     email: 'E-mail',
     password: 'Mot de Passe',
+    confirmPassword: 'Confirmer le Mot de Passe',
+    passwordMismatch: 'Les mots de passe ne correspondent pas',
     name: 'Nom',
     haveAccount: 'Vous avez un compte? Se Connecter',
     needAccount: 'Besoin d\'un compte? S\'inscrire',
     loginSuccess: 'Succès! Vous êtes maintenant connecté.',
     registerSuccess: 'Inscription réussie! Veuillez vous connecter maintenant.',
+    sessionExpired: 'Session expirée. Veuillez vous reconnecter.',
     loginError: 'Échec de l\'authentification. Veuillez réessayer.',
     
     // Travel Tips Additional
@@ -628,11 +637,14 @@ export const translations = {
     register: 'Registrieren',
     email: 'E-Mail',
     password: 'Passwort',
+    confirmPassword: 'Passwort Bestätigen',
+    passwordMismatch: 'Passwörter stimmen nicht überein',
     name: 'Name',
     haveAccount: 'Haben Sie ein Konto? Anmelden',
     needAccount: 'Brauchen Sie ein Konto? Registrieren',
     loginSuccess: 'Erfolg! Sie sind jetzt angemeldet.',
     registerSuccess: 'Registrierung erfolgreich! Bitte melden Sie sich jetzt an.',
+    sessionExpired: 'Sitzung abgelaufen. Bitte melde dich erneut an.',
     loginError: 'Authentifizierung fehlgeschlagen. Bitte versuchen Sie es erneut.',
     
     // Travel Tips Additional
@@ -762,11 +774,14 @@ export const translations = {
     register: 'Registrati',
     email: 'Email',
     password: 'Password',
+    confirmPassword: 'Conferma Password',
+    passwordMismatch: 'Le password non corrispondono',
     name: 'Nome',
     haveAccount: 'Hai un account? Accedi',
     needAccount: 'Hai bisogno di un account? Registrati',
     loginSuccess: 'Successo! Ora sei registrato.',
     registerSuccess: 'Registrazione completata! Accedi ora.',
+    sessionExpired: 'Sessione scaduta. Effettua il login di nuovo.',
     loginError: 'Autenticazione non riuscita. Riprova.',
     
     // Travel Tips Additional
@@ -896,11 +911,14 @@ export const translations = {
     register: 'Registrar',
     email: 'E-mail',
     password: 'Senha',
+    confirmPassword: 'Confirmar Senha',
+    passwordMismatch: 'As senhas não correspondem',
     name: 'Nome',
     haveAccount: 'Tem uma conta? Conecte-se',
     needAccount: 'Precisa de uma conta? Registre-se',
     loginSuccess: 'Sucesso! Você está conectado.',
     registerSuccess: 'Registro bem-sucedido! Faça login agora.',
+    sessionExpired: 'Sessão expirada. Por favor faça login novamente.',
     loginError: 'Falha na autenticação. Tente novamente.',
     
     // Travel Tips Additional
@@ -1030,11 +1048,14 @@ export const translations = {
     register: '登録',
     email: 'メール',
     password: 'パスワード',
+    confirmPassword: 'パスワードを確認する',
+    passwordMismatch: 'パスワードが一致しません',
     name: '名前',
     haveAccount: 'アカウントをお持ちですか？ ログイン',
     needAccount: 'アカウントが必要ですか？ 登録',
     loginSuccess: '成功！ログインしました。',
     registerSuccess: '登録成功！ここでログインしてください。',
+    sessionExpired: 'セッションの有効期限が切れました。再度ログインしてください。',
     loginError: '認証に失敗しました。もう一度お試しください。',
     
     // Travel Tips Additional
@@ -1164,11 +1185,14 @@ export const translations = {
     register: '注册',
     email: '电子邮件',
     password: '密码',
+    confirmPassword: '确认密码',
+    passwordMismatch: '密码不匹配',
     name: '名字',
     haveAccount: '有账户？ 登录',
     needAccount: '需要账户？ 注册',
     loginSuccess: '成功！您已登录。',
     registerSuccess: '注册成功！请现在登录。',
+    sessionExpired: '会话已过期。请重新登录。',
     loginError: '身份验证失败。请重试。',
     
     // Travel Tips Additional

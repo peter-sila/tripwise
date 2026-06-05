@@ -65,6 +65,8 @@ function AIPlanner() {
   const [contactMessage, setContactMessage] = useState('');
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [sessionMessage, setSessionMessage] = useState('');
+  const [showContactSuccess, setShowContactSuccess] = useState(false);
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
 
   const handleAiInputChange = (e) => {
     const { name, value } = e.target;
@@ -95,7 +97,8 @@ function AIPlanner() {
     e && e.preventDefault();
     const token = localStorage.getItem('token');
     if (!token) {
-      setFormMessage(getTranslation('loginError', language));
+      // Show login popup instead of just setting error
+      setShowLoginPopup(true);
       return;
     }
 
@@ -109,6 +112,9 @@ function AIPlanner() {
     setFormMessage('');
 
     try {
+      const tokenForLog = token || 'no-token';
+      console.debug('AI generate token:', tokenForLog);
+
       const response = await fetch(`${API_BASE}/trip-plans/generate-with-ai`, {
         method: 'POST',
         headers: {
@@ -233,7 +239,8 @@ function AIPlanner() {
       const data = await response.json();
 
       if (response.ok) {
-        setContactMessage(getTranslation('messageSent', language));
+        // Show success modal instead of just a message
+        setShowContactSuccess(true);
         setContactFormData({
           name: '',
           email: '',
@@ -241,8 +248,8 @@ function AIPlanner() {
           subject: '',
           message: ''
         });
-        // Clear success message after 5 seconds
-        setTimeout(() => setContactMessage(''), 5000);
+        // Auto-close after 8 seconds
+        setTimeout(() => setShowContactSuccess(false), 8000);
       } else {
         setContactMessage(data.detail || getTranslation('messageError', language));
       }
@@ -535,274 +542,6 @@ END:VCALENDAR`;
           </div>
         </section>
 
-        {/* TRIP PLANS SECTION */}
-        <section className="plans-section">
-          <div className="container">
-            <div className="plans-header">
-              <div>
-                <h2 className="section-title">{getTranslation('myTripPlans', language)}</h2>
-              </div>
-              <button className="create-plan-btn" onClick={() => setShowForm(!showForm)}>
-                <Plus size={20} /> {getTranslation('createNewPlan', language)}
-              </button>
-            </div>
-
-            {showForm && (
-              <div className="create-plan-card">
-                <div className="form-header">
-                  <h3>{editingPlanId ? getTranslation('editPlan', language) || 'Edit Plan' : getTranslation('createNewPlan', language)}</h3>
-                  <button 
-                    type="button"
-                    className="form-close-btn"
-                    onClick={() => {
-                      setShowForm(false);
-                      setEditingPlanId(null);
-                      setFormData({ title: '', description: '', start_date: '', end_date: '' });
-                      setTripItems([]);
-                      setItemFormData({ title: '', description: '', date: '', time: '' });
-                      setFormMessage('');
-                    }}
-                  >
-                    ×
-                  </button>
-                </div>
-
-                {formMessage && (
-                  <div className={`form-message ${formMessage.includes('success') || formMessage === getTranslation('tripPlanCreated', language) || formMessage === getTranslation('tripPlanUpdated', language) ? 'success' : 'error'}`}>
-                    {formMessage}
-                  </div>
-                )}
-
-                <form className="create-plan-form" onSubmit={handleCreatePlan}>
-                  <div className="form-group">
-                    <label htmlFor="plan-title">{getTranslation('planTitle', language)}</label>
-                    <input
-                      id="plan-title"
-                      type="text"
-                      name="title"
-                      value={formData.title}
-                      onChange={handleInputChange}
-                      placeholder={getTranslation('planTitle', language)}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="plan-description">{getTranslation('planDescription', language)}</label>
-                    <textarea
-                      id="plan-description"
-                      name="description"
-                      value={formData.description}
-                      onChange={handleInputChange}
-                      placeholder={getTranslation('planDescription', language)}
-                      rows="4"
-                    />
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label htmlFor="plan-start-date">{getTranslation('startDate', language)}</label>
-                      <input
-                        id="plan-start-date"
-                        type="date"
-                        name="start_date"
-                        value={formData.start_date}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="plan-end-date">{getTranslation('endDate', language)}</label>
-                      <input
-                        id="plan-end-date"
-                        type="date"
-                        name="end_date"
-                        value={formData.end_date}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* Trip Items Section */}
-                  <div className="trip-items-section">
-                    <h4 className="items-section-title">{getTranslation('addActivities', language) || 'Add Activities (Optional)'}</h4>
-                    
-                    {/* Existing Items List */}
-                    {tripItems.length > 0 && (
-                      <div className="items-list">
-                        {tripItems.map(item => (
-                          <div key={item.id} className="item-card">
-                            <div className="item-content">
-                              <p className="item-title">{item.title}</p>
-                              {item.description && <p className="item-description">{item.description}</p>}
-                              {item.date && <p className="item-date">{item.date} {item.time ? `at ${item.time}` : ''}</p>}
-                            </div>
-                            <button
-                              type="button"
-                              className="btn-remove-item"
-                              onClick={() => handleRemoveItem(item.id)}
-                              title={getTranslation('remove', language) || 'Remove'}
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Add Item Section */}
-                    <div className="add-item-form">
-                      <div className="form-group">
-                        <input
-                          type="text"
-                          name="title"
-                          value={itemFormData.title}
-                          onChange={handleItemInputChange}
-                          placeholder={getTranslation('activityTitle', language) || 'Activity title'}
-                          className="item-input"
-                        />
-                      </div>
-                      <div className="form-row">
-                        <div className="form-group">
-                          <input
-                            type="date"
-                            name="date"
-                            value={itemFormData.date}
-                            onChange={handleItemInputChange}
-                            className="item-input"
-                          />
-                        </div>
-                        <div className="form-group">
-                          <input
-                            type="time"
-                            name="time"
-                            value={itemFormData.time}
-                            onChange={handleItemInputChange}
-                            className="item-input"
-                          />
-                        </div>
-                      </div>
-                      <div className="form-group">
-                        <input
-                          type="text"
-                          name="description"
-                          value={itemFormData.description}
-                          onChange={handleItemInputChange}
-                          placeholder={getTranslation('activityDescription', language) || 'Activity description (optional)'}
-                          className="item-input"
-                        />
-                      </div>
-                      <button 
-                        type="button" 
-                        className="btn-add-item"
-                        onClick={handleAddItem}
-                      >
-                        <Plus size={16} /> {getTranslation('addActivity', language) || 'Add Activity'}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="form-actions">
-                    <button 
-                      type="button"
-                      className="btn-cancel"
-                      onClick={() => {
-                        setShowForm(false);
-                        setEditingPlanId(null);
-                        setFormData({ title: '', description: '', start_date: '', end_date: '' });
-                        setTripItems([]);
-                        setItemFormData({ title: '', description: '', date: '', time: '' });
-                        setFormMessage('');
-                      }}
-                      disabled={formLoading}
-                    >
-                      {getTranslation('cancel', language)}
-                    </button>
-                    <button 
-                      type="submit" 
-                      className="btn-submit"
-                      disabled={formLoading}
-                    >
-                      {formLoading ? 
-                        (editingPlanId ? getTranslation('updating', language) || 'Updating...' : getTranslation('creating', language)) 
-                        : (editingPlanId ? getTranslation('updatePlan', language) || 'Update Plan' : getTranslation('createPlan', language))
-                      }
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            <div className="plans-grid">
-              {loading ? (
-                <div className="loading-state">
-                  <Brain size={48} />
-                  <p>{getTranslation('loading', language)}</p>
-                </div>
-              ) : tripPlans.length > 0 ? (
-                tripPlans.map(plan => (
-                  <div key={plan.id} className="plan-card">
-                    <h3>{plan.title}</h3>
-                    <p>{plan.description}</p>
-                    <div className="plan-dates">
-                      <Calendar size={16} />
-                      {plan.start_date && plan.end_date ? 
-                        `${new Date(plan.start_date).toLocaleDateString()} - ${new Date(plan.end_date).toLocaleDateString()}` :
-                        getTranslation('noPlans', language)
-                      }
-                    </div>
-                    <div className="plan-items">
-                      {plan.items && plan.items.length > 0 ? (
-                        <ul>
-                          {plan.items.map(item => (
-                            <li key={item.id}>{item.title}</li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p>{getTranslation('noPlans', language)}</p>
-                      )}
-                    </div>
-                    <div className="plan-actions">
-                      <button 
-                        className="btn-add-calendar"
-                        onClick={() => handleAddToCalendar(plan)}
-                        title={getTranslation('addToCalendar', language)}
-                      >
-                        <Download size={16} />
-                        {getTranslation('addToCalendar', language)}
-                      </button>
-                      <button 
-                        className="btn-edit-plan"
-                        onClick={() => handleEditPlan(plan)}
-                        title={getTranslation('edit', language) || 'Edit'}
-                        disabled={deleteLoading === plan.id}
-                      >
-                        <Edit2 size={16} />
-                        {getTranslation('edit', language) || 'Edit'}
-                      </button>
-                      <button 
-                        className="btn-delete-plan"
-                        onClick={() => handleDeletePlan(plan.id)}
-                        title={getTranslation('delete', language) || 'Delete'}
-                        disabled={deleteLoading === plan.id}
-                      >
-                        <Trash2 size={16} />
-                        {deleteLoading === plan.id ? getTranslation('deleting', language) || 'Deleting...' : getTranslation('delete', language) || 'Delete'}
-                      </button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="empty-state">
-                  <Brain size={48} />
-                  <p>{getTranslation('startPlanningYourTrip', language)}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-
         {/* OUR STORY SECTION */}
         <section className="our-story-section">
           <div className="container">
@@ -937,6 +676,80 @@ END:VCALENDAR`;
           window.dispatchEvent(new CustomEvent('openAuth', { detail: { mode: 'login' } }));
         }}
       />
+      
+      {/* Contact Success Modal */}
+      {showContactSuccess && (
+        <div className="contact-success-modal">
+          <div className="success-modal-backdrop" onClick={() => setShowContactSuccess(false)}></div>
+          <div className="success-modal-content">
+            <div className="success-modal-header">
+              <h2>{getTranslation('messageSent', language)}</h2>
+            </div>
+            <div className="success-modal-body">
+              <div className="success-icon">✓</div>
+              <p>{getTranslation('messageSent', language)}</p>
+              <p className="success-subtext">Thank you for reaching out! We'll get back to you soon.</p>
+              {!localStorage.getItem('token') && (
+                <div className="success-register-link">
+                  <p>Don't have an account yet?</p>
+                  <button 
+                    className="register-btn"
+                    onClick={() => {
+                      setShowContactSuccess(false);
+                      window.dispatchEvent(new CustomEvent('openAuth', { detail: { mode: 'register' } }));
+                    }}
+                  >
+                    Create Account
+                  </button>
+                </div>
+              )}
+            </div>
+            <button 
+              className="success-modal-close"
+              onClick={() => setShowContactSuccess(false)}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Login Popup for AI Planner */}
+      {showLoginPopup && (
+        <div className="login-popup-modal">
+          <div className="login-popup-backdrop" onClick={() => setShowLoginPopup(false)}></div>
+          <div className="login-popup-content">
+            <button 
+              className="login-popup-close"
+              onClick={() => setShowLoginPopup(false)}
+            >
+              ×
+            </button>
+            <div className="login-popup-header">
+              <h2>{getTranslation('login', language)}</h2>
+              <p>Login to create your personalized travel plan</p>
+            </div>
+            <button 
+              className="login-popup-btn"
+              onClick={() => {
+                setShowLoginPopup(false);
+                window.dispatchEvent(new CustomEvent('openAuth', { detail: { mode: 'login' } }));
+              }}
+            >
+              Go to Login
+            </button>
+            <button 
+              className="register-popup-btn"
+              onClick={() => {
+                setShowLoginPopup(false);
+                window.dispatchEvent(new CustomEvent('openAuth', { detail: { mode: 'register' } }));
+              }}
+            >
+              Create Account
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -72,5 +72,10 @@ def verify_token(token: str) -> Optional[int]:
     if payload is None:
         return None
     
-    user_id = payload.get("sub")
-    return user_id
+    user_id_str = payload.get("sub")
+    try:
+        # Convert string subject back to integer
+        user_id = int(user_id_str)
+        return user_id
+    except (ValueError, TypeError):
+        return None
