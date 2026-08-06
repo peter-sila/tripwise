@@ -31,6 +31,10 @@ services:
       - DB_USER=sa
       - DB_PASSWORD=Wise12.,
       - DB_NAME=tripwise_db
+
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     depends_on:
       mysql:
         condition: service_healthy

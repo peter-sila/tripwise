@@ -23,6 +23,7 @@ const NavBar = () => {
   const [showUserMenu, setShowUserMenu] = useState(false); // For user profile dropdown
   const [showLanguageMenu, setShowLanguageMenu] = useState(false); // For language selector
   const [showProfileModal, setShowProfileModal] = useState(false); // For profile modal
+  const [isGoogleAuthLoading, setIsGoogleAuthLoading] = useState(false);
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -240,6 +241,7 @@ const NavBar = () => {
   };
 
   const handleGoogleSuccess = async (credentialResponse) => {
+    setIsGoogleAuthLoading(false);
     try {
       const requestBody = {};
       if (credentialResponse.credential) {
@@ -289,6 +291,7 @@ const NavBar = () => {
   };
 
   const handleGoogleError = () => {
+    setIsGoogleAuthLoading(false);
     console.error('Google Login Failed');
     showErrorNotification('Google Sign-In failed. Please try again.');
   };
@@ -297,8 +300,18 @@ const NavBar = () => {
     onSuccess: handleGoogleSuccess,
     onError: handleGoogleError,
     flow: 'implicit',
+    ux_mode: 'redirect',
     scope: 'openid profile email'
   });
+
+  const handleGoogleLoginClick = () => {
+    if (isGoogleAuthLoading) {
+      return;
+    }
+
+    setIsGoogleAuthLoading(true);
+    googleLogin();
+  };
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const toggleSearch = () => {
@@ -509,10 +522,17 @@ const NavBar = () => {
             </div>
             <div className="google-signin-container">
               {import.meta.env.VITE_GOOGLE_CLIENT_ID && import.meta.env.VITE_GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID_HERE' ? (
-                <button type="button" className="google-login-btn" onClick={() => googleLogin()}>
-                  {authMode === 'login'
-                    ? getTranslation('signInWithGoogle', language)
-                    : getTranslation('signUpWithGoogle', language)}
+                <button
+                  type="button"
+                  className="google-login-btn"
+                  onClick={handleGoogleLoginClick}
+                  disabled={isGoogleAuthLoading}
+                >
+                  {isGoogleAuthLoading
+                    ? (getTranslation('loading', language) || 'Loading...')
+                    : (authMode === 'login'
+                      ? getTranslation('signInWithGoogle', language)
+                      : getTranslation('signUpWithGoogle', language))}
                 </button>
               ) : (
                 <div className="google-placeholder">{getTranslation('googleNotConfigured', language) || 'Google Sign-In not configured'}</div>
