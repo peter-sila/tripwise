@@ -1,0 +1,23 @@
+.admin-trip-plans-card {
+  animation: fadeInUp 0.5s ease-out both;
+}
+
+.admin-table tbody tr {
+  animation: fadeInUp 0.42s ease-out both;
+}
+
+.admin-destination-meta {
+  transition: transform 180ms ease;
+}
+
+.admin-action-btn {
+  min-width: 100px;
+}
+
+.admin-table tbody tr:nth-child(odd) {
+  background: #ffffff;
+}
+
+.admin-table tbody tr:nth-child(even) {
+  background: #f9fafb;
+}

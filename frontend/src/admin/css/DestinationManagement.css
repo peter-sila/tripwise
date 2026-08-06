@@ -1,0 +1,17 @@
+.admin-destinations-card {
+  animation: fadeInUp 0.5s ease-out both;
+}
+
+.admin-cards-grid {
+  animation: popIn 0.55s ease-out both;
+}
+
+.admin-destination-card {
+  transform: translateY(0);
+  transition: transform 220ms ease, box-shadow 220ms ease;
+}
+
+.admin-destination-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 22px 40px rgba(15, 23, 42, 0.08);
+}

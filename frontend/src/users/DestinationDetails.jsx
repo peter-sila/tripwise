@@ -20,6 +20,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { getTranslation } from '../utils/translations';
+import { showSuccessNotification } from '../utils/notificationUtils';
 import { getSafeImageUrl } from './utils/imageUtils';
 import './css/destinationdetails.css';
 
@@ -123,7 +124,7 @@ function DestinationDetails() {
     } else {
       // Fallback: Copy URL to clipboard
       navigator.clipboard.writeText(window.location.href);
-      alert('Link copied to clipboard!');
+      showSuccessNotification(getTranslation('linkCopied', language) || 'Link copied to clipboard!');
     }
   };
 

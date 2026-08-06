@@ -1,0 +1,16 @@
+.admin-contact-card {
+  animation: fadeInUp 0.48s ease-out both;
+}
+
+.admin-table tbody tr {
+  animation: fadeInUp 0.42s ease-out both;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 14px 18px;
+}
+
+.admin-table td {
+  transition: background-color 180ms ease;
+}

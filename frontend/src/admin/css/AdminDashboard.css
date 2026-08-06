@@ -1,0 +1,23 @@
+.admin-dashboard-page-enter {
+  animation: fadeInUp 0.45s ease-out both;
+}
+
+.admin-dashboard-header {
+  animation: slideInRight 0.55s ease-out both;
+}
+
+.admin-intro {
+  opacity: 0;
+  animation: fadeInUp 0.5s ease-out 0.15s both;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

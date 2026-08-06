@@ -1,0 +1,29 @@
+.admin-sidebar {
+  animation: fadeInUp 0.5s ease-out both;
+}
+
+.admin-sidebar-link {
+  opacity: 0;
+  animation: fadeInUp 0.42s ease-out both;
+  animation-delay: 0.16s;
+}
+
+.admin-sidebar-link:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.admin-sidebar-link:nth-child(3) {
+  animation-delay: 0.24s;
+}
+
+.admin-sidebar-link:nth-child(4) {
+  animation-delay: 0.28s;
+}
+
+.admin-sidebar-link:nth-child(5) {
+  animation-delay: 0.32s;
+}
+
+.admin-sidebar-link:nth-child(6) {
+  animation-delay: 0.36s;
+}

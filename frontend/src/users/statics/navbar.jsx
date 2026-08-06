@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useLanguage } from '../../context/LanguageContext';
 import { getTranslation } from '../../utils/translations';
+import { showSuccessNotification, showErrorNotification } from '../../utils/notificationUtils';
 import { getSafeImageUrl } from '../utils/imageUtils';
 import ProfileModal from './ProfileModal';
 import '../css/navbar.css';
@@ -203,7 +204,7 @@ const NavBar = () => {
         setShowAuth(false);
         setAuthData({ email: '', password: '', confirmPassword: '', name: '' });
         setAuthError('');
-        alert(getTranslation('loginSuccess', language));
+        showSuccessNotification(getTranslation('loginSuccess', language));
         
         // Redirect to admin dashboard if user is admin
         if (data.user && data.user.is_admin) {
@@ -215,7 +216,9 @@ const NavBar = () => {
       } 
       // Handle error response
       else if (data.detail) {
-        setAuthError(`Error: ${data.detail}`);
+        const message = `Error: ${data.detail}`;
+        setAuthError(message);
+        showErrorNotification(message);
       }
       // Handle other error messages
       else {
@@ -223,7 +226,9 @@ const NavBar = () => {
       }
     } catch (error) {
       console.error('Auth error:', error);
-      setAuthError(getTranslation('loginError', language));
+      const message = getTranslation('loginError', language);
+      setAuthError(message);
+      showErrorNotification(message);
     }
   };
 
@@ -243,7 +248,7 @@ const NavBar = () => {
         requestBody.access_token = credentialResponse.access_token;
       } else {
         console.error('Google auth success missing credential/access_token', credentialResponse);
-        alert(getTranslation('loginError', language));
+        showErrorNotification(getTranslation('loginError', language));
         return;
       }
 
@@ -263,7 +268,7 @@ const NavBar = () => {
         setShowAuth(false);
         setAuthData({ email: '', password: '', name: '', confirmPassword: '' });
         setAuthError('');
-        alert(getTranslation('loginSuccess', language));
+        showSuccessNotification(getTranslation('loginSuccess', language));
         
         // Redirect to admin dashboard if user is admin
         if (data.user && data.user.is_admin) {
@@ -273,17 +278,19 @@ const NavBar = () => {
           }, 500);
         }
       } else if (data.detail) {
-        alert(`Error: ${data.detail}`);
+        const message = `Error: ${data.detail}`;
+        showErrorNotification(message);
       }
     } catch (error) {
       console.error('Google auth error:', error);
-      alert(getTranslation('loginError', language));
+      const message = getTranslation('loginError', language);
+      showErrorNotification(message);
     }
   };
 
   const handleGoogleError = () => {
     console.error('Google Login Failed');
-    alert('Google Sign-In failed. Please try again.');
+    showErrorNotification('Google Sign-In failed. Please try again.');
   };
 
   const googleLogin = useGoogleLogin({

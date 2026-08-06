@@ -1,0 +1,16 @@
+.admin-reviews-card {
+  animation: fadeInUp 0.48s ease-out both;
+}
+
+.admin-table tbody tr {
+  animation: fadeInUp 0.42s ease-out both;
+}
+
+.admin-table td {
+  max-width: 200px;
+  word-wrap: break-word;
+}
+
+.admin-table td:last-child {
+  width: 120px;
+}

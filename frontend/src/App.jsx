@@ -8,8 +8,9 @@ import AIPlanner from './users/AIPlanner.jsx';
 import TravelTips from './users/travelTips.jsx';
 import Reviews from './users/reviews.jsx';
 import UserProfile from './users/UserProfile.jsx';
-import AdminDashboard from './users/AdminDashboard.jsx';
+import AdminDashboard from './admin/AdminDashboard.jsx';
 import Login from './users/Login.jsx';
+import NotificationPopup from './components/NotificationPopup.jsx';
 
 // Read Google OAuth Client ID directly from Vite env and normalize it
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim();
@@ -41,10 +42,16 @@ function App() {
 
   return GOOGLE_IS_CONFIGURED ? (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      {appContent}
+      <>
+        {appContent}
+        <NotificationPopup />
+      </>
     </GoogleOAuthProvider>
   ) : (
-    appContent
+    <>
+      {appContent}
+      <NotificationPopup />
+    </>
   );
 }
 

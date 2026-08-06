@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { getTranslation } from '../utils/translations';
+import { showSuccessNotification, showErrorNotification } from '../utils/notificationUtils';
 import './css/aiplanner.css';
 import SessionExpiredModal from './statics/SessionExpiredModal.jsx';
 
@@ -84,6 +85,7 @@ function AIPlanner() {
         console.warn('Unable to clear token from localStorage:', e);
       }
       const msg = getTranslation('sessionExpired', language) || 'Session expired. Please log in again.';
+      showErrorNotification(msg);
       setSessionMessage(msg);
       setShowSessionModal(true);
       // Auto-redirect to login after short delay; user can also click the modal button
@@ -98,13 +100,16 @@ function AIPlanner() {
     const token = localStorage.getItem('token');
     if (!token) {
       // Show login popup instead of just setting error
+      showErrorNotification(getTranslation('loginError', language) || 'Please login to generate a trip plan.');
       setShowLoginPopup(true);
       return;
     }
 
     // minimal validation
     if (!aiFormData.destination || !aiFormData.duration_days) {
-      setFormMessage(getTranslation('aiFormRequired', language) || 'Destination and duration are required');
+      const message = getTranslation('aiFormRequired', language) || 'Destination and duration are required';
+      showErrorNotification(message);
+      setFormMessage(message);
       return;
     }
 
@@ -129,16 +134,22 @@ function AIPlanner() {
       if (response.ok && data.data) {
         // add saved plan to plans list
         setTripPlans(prev => [data.data, ...prev]);
-        setFormMessage(getTranslation('tripPlanCreated', language) || 'Trip plan created successfully');
+        const successMessage = getTranslation('tripPlanCreated', language) || 'Trip plan created successfully';
+        showSuccessNotification(successMessage);
+        setFormMessage(successMessage);
         // reset ai form
         setAiFormData({ destination: '', duration_days: '5', start_date: '', budget: 'moderate', travel_style: 'balanced', group_size: '2', interests: ['sightseeing', 'local cuisine'], accommodation: 'hotel' });
         setTimeout(() => setFormMessage(''), 3000);
       } else {
-        setFormMessage(data.detail || data.error || getTranslation('messageError', language));
+        const errorMessage = data.detail || data.error || getTranslation('messageError', language);
+        showErrorNotification(errorMessage);
+        setFormMessage(errorMessage);
       }
     } catch (err) {
       console.error('AI generate error', err);
-      setFormMessage(getTranslation('messageError', language));
+      const errorMessage = getTranslation('messageError', language);
+      showErrorNotification(errorMessage);
+      setFormMessage(errorMessage);
     } finally {
       setGeneratingPlan(false);
     }
@@ -191,7 +202,8 @@ function AIPlanner() {
   const handleAddItem = (e) => {
     e.preventDefault();
     if (!itemFormData.title.trim()) {
-      alert(getTranslation('itemTitleRequired', language) || 'Item title is required');
+      const message = getTranslation('itemTitleRequired', language) || 'Item title is required';
+      showErrorNotification(message);
       return;
     }
 
@@ -241,6 +253,7 @@ function AIPlanner() {
       if (response.ok) {
         // Show success modal instead of just a message
         setShowContactSuccess(true);
+        showSuccessNotification(getTranslation('messageSent', language));
         setContactFormData({
           name: '',
           email: '',
@@ -251,11 +264,15 @@ function AIPlanner() {
         // Auto-close after 8 seconds
         setTimeout(() => setShowContactSuccess(false), 8000);
       } else {
-        setContactMessage(data.detail || getTranslation('messageError', language));
+        const errorMessage = data.detail || getTranslation('messageError', language);
+        showErrorNotification(errorMessage);
+        setContactMessage(errorMessage);
       }
     } catch (error) {
       console.error('Error submitting contact form:', error);
-      setContactMessage(getTranslation('messageError', language));
+      const errorMessage = getTranslation('messageError', language);
+      showErrorNotification(errorMessage);
+      setContactMessage(errorMessage);
     } finally {
       setContactLoading(false);
     }
@@ -326,7 +343,8 @@ END:VCALENDAR`;
 
     const token = localStorage.getItem('token');
     if (!token) {
-      alert(getTranslation('loginError', language));
+      const message = getTranslation('loginError', language);
+      showErrorNotification(message);
       return;
     }
 
@@ -343,11 +361,13 @@ END:VCALENDAR`;
       if (response.ok) {
         setTripPlans(tripPlans.filter(plan => plan.id !== planId));
       } else {
-        alert(data.detail || getTranslation('errorDeletingPlan', language) || 'Failed to delete plan');
+        const errorMessage = data.detail || getTranslation('errorDeletingPlan', language) || 'Failed to delete plan';
+        showErrorNotification(errorMessage);
       }
     } catch (error) {
       console.error('Error deleting trip plan:', error);
-      alert(getTranslation('errorDeletingPlan', language) || 'Failed to delete plan');
+      const errorMessage = getTranslation('errorDeletingPlan', language) || 'Failed to delete plan';
+      showErrorNotification(errorMessage);
     } finally {
       setDeleteLoading(null);
     }
@@ -376,7 +396,9 @@ END:VCALENDAR`;
 
     // Validation checks
     if (!formData.title.trim()) {
-      setFormMessage(getTranslation('planTitleRequired', language) || 'Plan title is required');
+      const message = getTranslation('planTitleRequired', language) || 'Plan title is required';
+      showErrorNotification(message);
+      setFormMessage(message);
       return;
     }
 
@@ -385,7 +407,9 @@ END:VCALENDAR`;
       const endDate = new Date(formData.end_date);
       
       if (endDate <= startDate) {
-        setFormMessage(getTranslation('endDateAfterStart', language) || 'End date must be after start date');
+        const message = getTranslation('endDateAfterStart', language) || 'End date must be after start date';
+        showErrorNotification(message);
+        setFormMessage(message);
         return;
       }
 
@@ -394,7 +418,9 @@ END:VCALENDAR`;
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         if (startDate < today) {
-          setFormMessage(getTranslation('futureDateRequired', language) || 'Start date must be in the future');
+          const message = getTranslation('futureDateRequired', language) || 'Start date must be in the future';
+          showErrorNotification(message);
+          setFormMessage(message);
           return;
         }
       }
@@ -432,6 +458,7 @@ END:VCALENDAR`;
         const successMessage = editingPlanId 
           ? (getTranslation('tripPlanUpdated', language) || 'Trip plan updated successfully!')
           : getTranslation('tripPlanCreated', language);
+        showSuccessNotification(successMessage);
         setFormMessage(successMessage);
         setFormData({ title: '', description: '', start_date: '', end_date: '' });
         setTripItems([]);
@@ -443,13 +470,19 @@ END:VCALENDAR`;
           fetchTripPlans();
         }, 2000);
       } else if (data.error) {
-        setFormMessage(data.error);
+        const errorMessage = data.error;
+        showErrorNotification(errorMessage);
+        setFormMessage(errorMessage);
       } else {
-        setFormMessage(getTranslation('errorCreatingPlan', language));
+        const errorMessage = getTranslation('errorCreatingPlan', language);
+        showErrorNotification(errorMessage);
+        setFormMessage(errorMessage);
       }
     } catch (error) {
       console.error('Error creating trip plan:', error);
-      setFormMessage(getTranslation('errorCreatingPlan', language));
+      const errorMessage = getTranslation('errorCreatingPlan', language);
+      showErrorNotification(errorMessage);
+      setFormMessage(errorMessage);
     } finally {
       setFormLoading(false);
     }

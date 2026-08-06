@@ -1,0 +1,39 @@
+.admin-overview-card {
+  animation: fadeInUp 0.55s ease-out both;
+}
+
+.admin-stats-grid {
+  gap: 20px;
+}
+
+.admin-stat-card {
+  animation: popIn 0.5s ease-out both;
+  animation-delay: 0.1s;
+}
+
+.admin-stat-card:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.admin-stat-card:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.admin-stat-card:nth-child(4) {
+  animation-delay: 0.25s;
+}
+
+.admin-stat-card:nth-child(5) {
+  animation-delay: 0.3s;
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
