@@ -417,6 +417,16 @@ const NavBar = () => {
                     {getTranslation('profile', language)}
                   </button>
                   <button 
+                    className="dropdown-item"
+                    onClick={() => {
+                      navigate('/generated-plans');
+                      setShowUserMenu(false);
+                    }}
+                  >
+                    <MapPin size={16} />
+                    Generated Plans
+                  </button>
+                  <button 
                     className="dropdown-item logout-btn"
                     onClick={() => {
                       handleLogout();

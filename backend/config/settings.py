@@ -1,6 +1,7 @@
 """
 Configuration settings for TripWise Python Backend
 """
+import os
 from pydantic_settings import BaseSettings
 from typing import Optional
 
@@ -9,14 +10,14 @@ class Settings(BaseSettings):
     """Application settings from environment variables"""
     
     # Database Configuration
-    db_host: str = "localhost"
-    db_port: int = 3306
-    db_user: str = "root"
-    db_password: str = "wise"
-    db_name: str = "tripwise_db"
+    db_host: str = os.getenv("DB_HOST", "localhost")
+    db_port: int = int(os.getenv("DB_PORT", "3306"))
+    db_user: str = os.getenv("DB_USER", "")
+    db_password: str = os.getenv("DB_PASSWORD", "")
+    db_name: str = os.getenv("DB_NAME", "")
     
     # JWT Configuration
-    jwt_secret_key: str = "your-secret-key-change-in-production"
+    jwt_secret_key: str = os.getenv("JWT_SECRET_KEY", "")
     jwt_algorithm: str = "HS256"
     jwt_expiration_hours: int = 24
     
@@ -28,7 +29,11 @@ class Settings(BaseSettings):
     # CORS Configuration
     frontend_url: str = "http://localhost:5173"
     
-    # OpenAI Configuration for AI Trip Planning
+    # Groq Configuration for AI Trip Planning
+    groq_api_key: Optional[str] = None
+    groq_model: str = "llama-3.3-70b-versatile"
+    
+    # Legacy OpenAI Configuration (kept for compatibility)
     openai_api_key: Optional[str] = None
     openai_model: str = "gpt-4-turbo-preview"
     

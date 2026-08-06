@@ -2,7 +2,7 @@ import Navbar from "./statics/navbar.jsx";
 import Footer from "./statics/footer.jsx";
 import { Zap, MapPin, Calendar, Users, Brain, Sparkles, Plus, Send, Bell, Download, Edit2, Trash2, Loader } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { getTranslation } from '../utils/translations';
 import { showSuccessNotification, showErrorNotification } from '../utils/notificationUtils';
@@ -13,11 +13,13 @@ const API_BASE = 'http://localhost:8000/api';
 
 function AIPlanner() {
   const { language } = useLanguage();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   
   const [tripPlans, setTripPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(searchParams.get('showForm') === 'true');
+  const [selectedPlan, setSelectedPlan] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
   const [formMessage, setFormMessage] = useState('');
   const [generatingPlan, setGeneratingPlan] = useState(false);
@@ -187,6 +189,45 @@ function AIPlanner() {
     // Load saved trip plans on mount.
     fetchTripPlans();
   }, []);
+
+  useEffect(() => {
+    const planId = searchParams.get('planId');
+    if (!planId) {
+      setSelectedPlan(null);
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      return;
+    }
+
+    const loadSelectedPlan = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/trip-plans/${planId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (response.ok && data.data) {
+          const plan = data.data;
+          setSelectedPlan(plan);
+          setFormData({
+            title: plan.title || '',
+            description: plan.description || '',
+            start_date: plan.start_date || '',
+            end_date: plan.end_date || ''
+          });
+          setTripItems(plan.items || []);
+          setEditingPlanId(plan.id);
+          setShowForm(true);
+        }
+      } catch (error) {
+        console.error('Error loading selected plan:', error);
+      }
+    };
+
+    loadSelectedPlan();
+  }, [searchParams]);
   /* eslint-enable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
 
   const handleInputChange = (e) => {
@@ -374,6 +415,7 @@ END:VCALENDAR`;
   };
 
   const handleEditPlan = (plan) => {
+    setSelectedPlan(plan);
     setFormData({
       title: plan.title,
       description: plan.description || '',
@@ -464,6 +506,7 @@ END:VCALENDAR`;
         setTripItems([]);
         setItemFormData({ title: '', description: '', date: '', time: '' });
         setEditingPlanId(null);
+        setSelectedPlan(null);
         setTimeout(() => {
           setShowForm(false);
           setFormMessage('');
@@ -547,12 +590,80 @@ END:VCALENDAR`;
                   <button type="submit" className="btn-generate" disabled={generatingPlan}>
                     {generatingPlan ? (getTranslation('generating', language) || 'Generating...') : (getTranslation('generateAndSave', language) || 'Generate & Save')}
                   </button>
+                  <button type="button" className="btn-secondary" onClick={() => navigate('/generated-plans')}>
+                    View generated plans
+                  </button>
                   {formMessage && <span className="ai-form-message">{formMessage}</span>}
                 </div>
               </form>
             </div>
           </div>
         </section>
+
+        {(showForm || selectedPlan) && (
+          <section className="plans-section">
+            <div className="container">
+              <div className="create-plan-card">
+                <div className="form-header">
+                  <h3>{selectedPlan ? `Open plan: ${selectedPlan.title || 'Selected itinerary'}` : 'Plan details'}</h3>
+                  <button
+                    type="button"
+                    className="form-close-btn"
+                    onClick={() => {
+                      setShowForm(false);
+                      setSelectedPlan(null);
+                      setEditingPlanId(null);
+                      setFormData({ title: '', description: '', start_date: '', end_date: '' });
+                      setTripItems([]);
+                    }}
+                    aria-label="Close plan details"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                {selectedPlan ? (
+                  <div className="plan-detail-view">
+                    <div className="plan-detail-summary">
+                      <p>{selectedPlan.description || 'A thoughtfully crafted itinerary ready for review.'}</p>
+                      <div className="plan-detail-meta">
+                        <span><Calendar size={14} /> {selectedPlan.start_date || 'TBD'}</span>
+                        <span><MapPin size={14} /> {selectedPlan.end_date || 'TBD'}</span>
+                      </div>
+                    </div>
+
+                    <div className="trip-items-section">
+                      <h4 className="items-section-title">Itinerary</h4>
+                      {tripItems.length > 0 ? (
+                        <div className="items-list">
+                          {tripItems.map((item, index) => (
+                            <div className="item-card" key={`${selectedPlan.id}-${index}`}>
+                              <div className="item-content">
+                                <h5 className="item-title">{item.title}</h5>
+                                {item.description && <p className="item-description">{item.description}</p>}
+                                <p className="item-date">
+                                  {item.date ? `${item.date}` : ''}
+                                  {item.date && item.time ? ' • ' : ''}
+                                  {item.time ? `${item.time}` : ''}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="muted">No itinerary items available for this plan.</p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="empty-state">
+                    <p>Select a saved plan to view its full itinerary here.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* FEATURES SECTION */}
         <section className="features-section">
@@ -689,7 +800,10 @@ END:VCALENDAR`;
             <div className="cta-content">
               <h2>{getTranslation('planYourTrip', language)}</h2>
               <p>{getTranslation('startPlanningYourTrip', language)}</p>
-              <button className="cta-button" onClick={() => setShowForm(!showForm)}>{getTranslation('createNewPlan', language)}</button>
+              <div className="cta-actions">
+                <button className="cta-button" onClick={() => setShowForm(!showForm)}>{getTranslation('createNewPlan', language)}</button>
+                <button className="cta-button secondary" onClick={() => navigate('/generated-plans')}>View generated plans</button>
+              </div>
             </div>
           </div>
         </section>

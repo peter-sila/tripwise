@@ -1,14 +1,72 @@
 """
 Trip plan service for business logic
 """
+from datetime import date, datetime, time
+from typing import List, Optional
+
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
-from typing import List, Optional
+
 from app.models.trip_plan import TripPlan, TripPlanItem
 
 
 class TripPlanService:
     """Service for trip plan operations"""
+
+    @staticmethod
+    def normalize_item_date(value) -> Optional[date]:
+        """Convert string dates into date objects for SQLAlchemy."""
+        if value is None:
+            return None
+        if isinstance(value, date) and not isinstance(value, datetime):
+            return value
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, str):
+            value = value.strip()
+            if not value:
+                return None
+            try:
+                return datetime.fromisoformat(value).date()
+            except ValueError:
+                return None
+        return None
+
+    @staticmethod
+    def normalize_item_time(value) -> Optional[time]:
+        """Convert common time strings into time objects for SQLAlchemy."""
+        if value is None:
+            return None
+        if isinstance(value, time):
+            return value
+        if isinstance(value, datetime):
+            return value.time()
+        if isinstance(value, str):
+            value = value.strip()
+            if not value:
+                return None
+            try:
+                return datetime.fromisoformat(value).time()
+            except ValueError:
+                pass
+
+            if "AM" in value.upper() or "PM" in value.upper():
+                try:
+                    return datetime.strptime(value, "%I:%M %p").time()
+                except ValueError:
+                    try:
+                        return datetime.strptime(value, "%I:%M:%S %p").time()
+                    except ValueError:
+                        return None
+
+            try:
+                return datetime.strptime(value, "%H:%M").time()
+            except ValueError:
+                try:
+                    return datetime.strptime(value, "%H:%M:%S").time()
+                except ValueError:
+                    return None
+        return None
     
     @staticmethod
     def create_trip_plan(db: Session, user_id: int, plan_data: dict) -> TripPlan:
@@ -40,8 +98,8 @@ class TripPlanService:
                 title=item_data.get("title"),
                 description=item_data.get("description"),
                 destination_id=item_data.get("destination_id"),
-                date=item_data.get("date"),
-                time=item_data.get("time")
+                date=TripPlanService.normalize_item_date(item_data.get("date")),
+                time=TripPlanService.normalize_item_time(item_data.get("time"))
             )
             db.add(item)
 
@@ -117,8 +175,8 @@ class TripPlanService:
                     title=item_data.get("title"),
                     description=item_data.get("description"),
                     destination_id=item_data.get("destination_id"),
-                    date=item_data.get("date"),
-                    time=item_data.get("time")
+                    date=TripPlanService.normalize_item_date(item_data.get("date")),
+                    time=TripPlanService.normalize_item_time(item_data.get("time"))
                 )
                 db.add(item)
         
