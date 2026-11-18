@@ -4,11 +4,14 @@ Configuration settings for TripWise Python Backend
 import os
 from pydantic_settings import BaseSettings
 from typing import Optional
+from pydantic import Field
 
 
 class Settings(BaseSettings):
     """Application settings from environment variables"""
-    
+
+    database_url_override: Optional[str] = Field(default=None, alias="DATABASE_URL")
+
     # Database Configuration
     db_host: str = os.getenv("DB_HOST", "localhost")
     db_port: int = int(os.getenv("DB_PORT", "3306"))
@@ -54,8 +57,11 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
-        """Construct database URL for SQLAlchemy"""
-        return f"mysql+mysqlconnector://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
+        """Use DATABASE_URL when set, otherwise default to local SQLite."""
+        if self.database_url_override:
+            return self.database_url_override
+
+        return "sqlite:///./test.db"
 
 
 # Create settings instance

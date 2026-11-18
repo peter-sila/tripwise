@@ -12,6 +12,10 @@ def run_migrations():
     Run all pending database migrations
     Specifically adds updated_at columns to tables that are missing them
     """
+    if engine.dialect.name == "sqlite":
+        logger.info("SQLite database in use; SQLAlchemy model metadata provides the schema")
+        return
+
     migrations = [
         {
             "name": "Add updated_at to destinations",

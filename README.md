@@ -7,7 +7,7 @@ A full-stack travel planning web application with destination browsing, trip pla
 ### Prerequisites
 - Node.js 16+
 - Python 3.8+
-- MySQL 5.7+
+- SQLite (default; no external setup required)
 
 ### Backend Setup
 ```bash
@@ -42,11 +42,16 @@ npm run dev
 ## Tech Stack
 - **Frontend**: React 18, Vite, React Router, Lucide Icons
 - **Backend**: FastAPI, SQLAlchemy, Python
-- **Database**: MySQL
+- **Database**: SQLite by default (MySQL supported via `DATABASE_URL`)
 - **Authentication**: JWT
 
 ## Database
 Automatically initialized on first backend run. Database schema available in `backend/tripwise.sql`.
 
 ## Environment Variables
-See `backend/.env` for configuration.
+The default database is `sqlite:///./test.db`, stored in the backend directory.
+Set `DATABASE_URL` to override it, for example:
+
+```env
+DATABASE_URL=mysql+mysqlconnector://user:password@localhost:3306/tripwise_db
+```
