@@ -20,6 +20,7 @@ def setup_cors(app: FastAPI):
             "http://localhost:3000",
             "http://127.0.0.1:5173",
             "http://127.0.0.1:3000",
+            "https://tripwise-ete0.onrender.com",
             settings.frontend_url,
         ],
         allow_credentials=True,
